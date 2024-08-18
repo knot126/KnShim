@@ -41,6 +41,7 @@ int knEnablePeekPoke(lua_State *script);
 int knEnableHttp(lua_State *script);
 int knEnableSystem(lua_State *script);
 int knEnableRegistry(lua_State *script);
+int knEnableFile(lua_State *script);
 
 int load_lua_libs(lua_State *script) {
     __android_log_write(ANDROID_LOG_INFO, TAG, "Hello from lua! Opening libs..");
@@ -62,6 +63,9 @@ int load_lua_libs(lua_State *script) {
     
     // Registry
     knEnableRegistry(script);
+    
+    // Better file reading and writing
+    knEnableFile(script);
     
     return 0;
 }
