@@ -110,6 +110,10 @@ void android_main(struct android_app *app) {
         gAndroidInternalDataPath = strdup(app->activity->internalDataPath);
         gAndroidExternalDataPath = strdup(app->activity->externalDataPath);
     }
+    else {
+        __android_log_print(ANDROID_LOG_INFO, TAG, "Failed to mprotect() memory!");
+        return;
+    }
 
     __android_log_print(ANDROID_LOG_INFO, TAG, "Calling android_main at <0x%p> with app at <0x%p>", (void*)func, (void*)app);
     
