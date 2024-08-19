@@ -4,9 +4,33 @@
 > 
 > This documentation is, and always will be, incomplete.
 
+## Installation
+
+To start using the shim in your mod, you will either need to download prebuilt binaries or build it yourself using the Android NDK. We will assume you've downloaded the ZIP file for whatever the latest version is.
+
+First, we need to copy the library to the APK. Open the `lib` folder in your APK (the one where you should see subfolders with names like `arm64-v8a` and `armeabi-v7a`). Then, open the ZIP file to the folder that has the same structure as the `lib` folder (e.g. `arm64-v8a` and etc), and copy those folders into the `lib` folder, merging them.
+
+When you're done with this step, every subfolder in `lib` should have two files: `libshim.so` and `libsmashhit.so`.
+
+After this, we need to change it so that `libshim.so` is loaded *before* `libsmashhit.so`. Open your APK's `AndroidManifest.xml` in a text editor and look for this line:
+
+```xml
+<meta-data android:name="android.app.lib_name" android:value="smashhit"/>
+```
+
+> **Hint**: it's probably line 11
+
+Now change `smashhit` to `shim`: 
+
+```xml
+<meta-data android:name="android.app.lib_name" android:value="shim"/>
+```
+
+... save it (and your APK), and you're done! You should now have access to all of the functions provided below in any Lua script.
+
 ## Logging
 
-One new function is provided: `knLog(level, msg)`. It logs to the android debug stream, accessable with `adb logcat`. Level can be any one of:
+One new function is provided: `knLog(level, msg)`. It logs to the android debug stream, accessible with `adb logcat`. Level can be any one of:
 
 * `LOG_INFO`
 * `LOG_WARN`
@@ -192,3 +216,9 @@ Write a file with the given contents, which may contain embedded zeros. Returns 
 ### `knReadFile(path)`
 
 Read the contents of the given file. Returns a string with the contents on success, even if the file is empty, or nil on failure.
+
+## Troubleshooting
+
+### Note on Android SDK level
+
+If you changed the target SDK to something above 28, you will need to revert it to 28. The shim is not yet compatible with API level 29 or above.
