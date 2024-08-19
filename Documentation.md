@@ -180,3 +180,15 @@ Return the absolute path to the external data directory. This isn't used for any
 ### `knMakeDir(dirName)`
 
 Creates the directory at `dirName` using `mkdir(dirName, 0777)`. Returns `true` on success, `false` on failure. Note that if the directory already exists, this will return `false`.
+
+## Files
+
+The shim provides a few extra functions to make working with files easier.
+
+### `knWriteFile(path, content)`
+
+Write a file with the given contents, which may contain embedded zeros. Returns true on success, or false on failure.
+
+### `knReadFile(path)`
+
+Read the contents of the given file. Returns a string with the contents on success, even if the file is empty, or nil on failure.
