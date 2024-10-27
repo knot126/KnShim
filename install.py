@@ -15,8 +15,8 @@ def install(path):
 		import patcher
 		
 		try:
-			patcher.patch_binary(f"{path}/armeabi-v7a/libsmashhit.so", {"antitamper": []})
-			patcher.patch_binary(f"{path}/arm64-v8a/libsmashhit.so", {"antitamper": []})
+			patcher.patch_binary(f"{path}/lib/armeabi-v7a/libsmashhit.so", {"antitamper": []})
+			patcher.patch_binary(f"{path}/lib/arm64-v8a/libsmashhit.so", {"antitamper": []})
 		except:
 			print("Warning: Failed to patch some binaries.")
 	except ImportError:
