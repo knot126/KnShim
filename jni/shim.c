@@ -23,6 +23,7 @@ int knEnableHttp(lua_State *script);
 int knEnableSystem(lua_State *script);
 int knEnableRegistry(lua_State *script);
 int knEnableFile(lua_State *script);
+int knEnableGamectl(lua_State *script);
 
 int load_lua_libs(lua_State *script) {
     __android_log_write(ANDROID_LOG_INFO, TAG, "Hello from lua! Opening libs..");
@@ -47,6 +48,9 @@ int load_lua_libs(lua_State *script) {
     
     // Better file reading and writing
     knEnableFile(script);
+    
+    // Game control
+    knEnableGamectl(script);
     
     return 0;
 }
