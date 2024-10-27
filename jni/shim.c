@@ -1,9 +1,7 @@
 #include <android_native_app_glue.h>
 #include <android/log.h>
 #include <dlfcn.h>
-#include <sys/mman.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -11,30 +9,13 @@
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
 
-#define TAG "smashshim"
+#include "util.h"
 
 void *gLibsmashhitHandle;
 char *gAndroidInternalDataPath;
 char *gAndroidExternalDataPath;
 
 typedef void (*AndroidMainFunc)(struct android_app *app);
-
-int unprotect_memory(void *addr, size_t length) {
-    size_t page_size = getpagesize();
-    size_t align_diff = (size_t)addr % page_size; 
-    addr -= align_diff;
-    length += align_diff;
-    
-    __android_log_print(ANDROID_LOG_INFO, TAG, "unprotecting 0x%zx bytes at <%p> (aligned to %zu)", length, addr, page_size);
-    
-    int result = mprotect(addr, length, PROT_READ | PROT_WRITE | PROT_EXEC);
-    
-    if (result) {
-        __android_log_print(ANDROID_LOG_FATAL, TAG, "mprotect() failed: status %d: %d %s", result, errno, strerror(errno));
-    }
-    
-    return result;
-}
 
 int knEnableLog(lua_State *script);
 int knEnablePeekPoke(lua_State *script);

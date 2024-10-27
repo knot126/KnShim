@@ -7,62 +7,7 @@
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
 
-extern void *gLibsmashhitHandle;
-int unprotect_memory(void *addr, size_t length);
-
-int invert_branch(void *addr) {
-    /**
-     * Invert the branch at the given address.
-     * 
-     * On armv7 this also allows to invert any conditional isntruction but is
-     * not supported when cond=AL (hex E, bin 0b1110) since that would require
-     * NOP'ing out the instruction, making it impossible to invert again.
-     * 
-     * On armv8 this may only work for instructions of the form b.COND and
-     * bc.COND with immidate values.
-     * 
-     * Return 0 on success, nonzero on error.
-     */
-    
-#if defined(__ARM_ARCH_7A__)
-    uint32_t instr = *(uint32_t *)addr;
-    
-    // Nicely, we're allowed to just flip bit 28 and get the inverse
-    // branch for pretty much any type of condition :D
-    // See ARMv7 manual A5.1 and A8.3
-    if ((instr >> 29) != 0b111) {
-        instr ^= 0x10000000;
-        *(uint32_t *)addr = instr;
-        return 0;
-    }
-    // The exception is for cond=AL or cond=1111, for which the first
-    // is unconditional (and we'd have to nop out which would technically
-    // work but means destroying what was there) and the second is also
-    // unconditional but reserved for another set of unconditional
-    // instructions.
-    else {
-        return 1;
-    }
-#elif defined(__aarch64__)
-    uint32_t instr = *(uint32_t *)addr;
-    
-    // Check that this is either B.cond or BC.cond - that's all we support here!
-    // See C6.2.27 and C6.2.28 of ARMv8 reference manual. Note that bit 4 doesnt
-    // matter for our purposes! Also see C4.2.1 for what cond bits are, same as
-    // ARMv7 basically, so we can again just flip the bits though we don't need
-    // to worry about if cond=1110 or 1111 since they're both the same anyways.
-    if ((instr >> 24) == 0b01010100) {
-        instr ^= 1;
-        *(uint32_t *)addr = instr;
-        return 0;
-    }
-    else {
-        return 1;
-    }
-#else
-    return 1;
-#endif
-}
+#include "util.h"
 
 // MEMORY
 enum {
@@ -220,6 +165,29 @@ int knUnprotect(lua_State *script) {
     return 1;
 }
 
+int knSetMemoryProtection(lua_State *script) {
+    /**
+     * success = knSetMemoryProtection(addr, len, prot)
+     * 
+     * Change any pages containing the bytes [addr,addr+len) to have the given
+     * virtual memory protection options.
+     */
+    
+    if (lua_gettop(script) < 3) {
+        return 0;
+    }
+    
+    size_t address = lua_tointeger(script, 1);
+    size_t length = lua_tointeger(script, 2);
+    int protections = lua_tointeger(script, 3);
+    
+    int result = set_memory_protection((void *) address, length, protections);
+    
+    lua_pushboolean(script, !result);
+    
+    return 1;
+}
+
 int knSystemAbi(lua_State *script) {
     /**
      * abi = knSystemAbi()
@@ -280,8 +248,11 @@ int knEnablePeekPoke(lua_State *script) {
     lua_register(script, "knPeek", knPeek);
     lua_register(script, "knPoke", knPoke);
     lua_register(script, "knUnprotect", knUnprotect);
+    lua_register(script, "knSetMemoryProtection", knSetMemoryProtection);
     lua_register(script, "knSystemAbi", knSystemAbi);
     lua_register(script, "knInvertBranch", knInvertBranch);
+    
+    // Types
     lua_pushinteger(script, KN_TYPE_ADDR); lua_setglobal(script, "KN_TYPE_ADDR");
     lua_pushinteger(script, KN_TYPE_BOOL); lua_setglobal(script, "KN_TYPE_BOOL");
     lua_pushinteger(script, KN_TYPE_SHORT); lua_setglobal(script, "KN_TYPE_SHORT");
@@ -289,6 +260,11 @@ int knEnablePeekPoke(lua_State *script) {
     lua_pushinteger(script, KN_TYPE_FLOAT); lua_setglobal(script, "KN_TYPE_FLOAT");
     lua_pushinteger(script, KN_TYPE_STRING); lua_setglobal(script, "KN_TYPE_STRING");
     lua_pushinteger(script, KN_TYPE_BYTES); lua_setglobal(script, "KN_TYPE_BYTES");
+    
+    // Memory protections
+    knLuaPushEnum(script, KN_MEM_DATA);
+    knLuaPushEnum(script, KN_MEM_CODE);
+    knLuaPushEnum(script, KN_MEM_READ_ONLY);
     
     return 0;
 }
