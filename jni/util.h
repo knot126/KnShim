@@ -7,14 +7,14 @@
 #define TAG "smashshim"
 
 enum {
-	KN_MEM_DATA = PROT_READ | PROT_WRITE,
-	KN_MEM_CODE = PROT_READ | PROT_EXEC,
+	KN_MEM_READ_WRITE = PROT_READ | PROT_WRITE,
+	KN_MEM_READ_RUN = PROT_READ | PROT_EXEC,
 	KN_MEM_READ_ONLY = PROT_READ,
 };
 
 extern void *gLibsmashhitHandle;
 
-int get_target_sdk(void);
+int set_memory_protection(void *addr, size_t length, int protection);
 int unprotect_memory(void *addr, size_t length);
 int invert_branch(void *addr);
 int replace_function(void *from, void *to);

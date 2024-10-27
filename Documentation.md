@@ -72,7 +72,25 @@ Returns the address assocaited with the symbol as an integer.
 
 ### `knUnprotect(addr, size)`
 
+> **Deprecated**
+> 
+> `knUnprotect` may fail to work on newer versions of Android. Please use `knSetMemoryProtection` as described below!
+
 Mark any pages containing the memory in the range [`addr`,`addr`+`size`) as Read-Write-Execute. This is needed to ensure that memory is writable, if you are patching code or data in the `.rodata` section.
+
+Returns `true` on success or `false` on failure.
+
+### `knSetMemoryProtection(address, size, protections)`
+
+Mark any pages containing the memory in the range [`addr`,`addr`+`size`) as having the given memory protections.
+
+The `protections` variable may be one of `KN_MEM_READ_WRITE`, `KN_MEM_READ_RUN` or `KN_MEM_READ_ONLY`:
+
+* `KN_MEM_READ_WRITE`, which allows reading or writing the data, but not running it as code.
+* `KN_MEM_READ_RUN` ("run" meaning "execute"), which allows reading the data or running it as code, but not writing to it.
+* `KN_MEM_READ_ONLY` which allows reading the data, but not writing to it or running it as code.
+
+You might notice this is more limited than `knUnprotect` and wonder why it's now recommended.
 
 Returns `true` on success or `false` on failure.
 

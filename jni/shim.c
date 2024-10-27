@@ -75,7 +75,7 @@ void android_main(struct android_app *app) {
     
     __android_log_print(ANDROID_LOG_INFO, TAG, "Lua register funcs probably at <%p>", lua_reg_table);
     
-    if (!unprotect_memory(lua_reg_table, 64)) {
+    if (!set_memory_protection(lua_reg_table, 64, KN_MEM_READ_WRITE)) {
         // smash hit always loads it's own luaopen_base first
         // regardless of what's in the array so we actually load second
         // and avoid loading the base lib.
