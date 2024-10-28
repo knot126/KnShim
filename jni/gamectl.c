@@ -16,6 +16,10 @@ static inline Game *gamectl_get_game(void) {
 	return *ppGame;
 }
 
+static inline Level *gamectl_get_level(void) {
+	return gamectl_get_game()->level;
+}
+
 int knSetBalls(lua_State *script) {
 	Game *game = gamectl_get_game();
 	game->player->balls = lua_tointeger(script, 1);
@@ -28,9 +32,59 @@ int knSetStreak(lua_State *script) {
 	return 0;
 }
 
+int knLevelHitSomething(lua_State *script) {
+	void (*hitSomething)(Level*, int) = dlsym(gLibsmashhitHandle, "_ZN5Level12hitSomethingEi");
+	hitSomething(gamectl_get_level(), lua_tointeger(script, 1));
+	return 0;
+}
+
+int knLevelStreakAbort(lua_State *script) {
+	void (*streakAbort)(Level*, int) = dlsym(gLibsmashhitHandle, "_ZN5Level11streakAbortEi");
+	streakAbort(gamectl_get_level(), lua_tointeger(script, 1));
+	return 0;
+}
+
+int knLevelStreakInc(lua_State *script) {
+	void (*streakInc)(Level*, int) = dlsym(gLibsmashhitHandle, "_ZN5Level9streakIncEi");
+	streakInc(gamectl_get_level(), lua_tointeger(script, 1));
+	return 0;
+}
+
+int knLevelAddScore(lua_State *script) {
+	void (*addScore)(Level*, int, int) = dlsym(gLibsmashhitHandle, "_ZN5Level8addScoreEii");
+	addScore(gamectl_get_level(), lua_tointeger(script, 1), lua_tointeger(script, 2));
+	return 0;
+}
+
+int knLevelExplosion(lua_State *script) {
+	Level *level = gamectl_get_level();
+	
+	QiVec3 pos = {
+		.x = lua_tonumber(script, 1),
+		.y = lua_tonumber(script, 2),
+		.z = lua_tonumber(script, 3) - level->offsetZ,
+	};
+	
+	float power = lua_tonumber(script, 4);
+	
+	void (*explosion)(Level*, QiVec3*, float) = dlsym(gLibsmashhitHandle, "_ZN5Level9explosionERK6QiVec3f");
+	explosion(level, &pos, power);
+	
+	return 0;
+}
+
 int knEnableGamectl(lua_State *script) {
 	lua_register(script, "knSetBalls", knSetBalls);
 	lua_register(script, "knSetStreak", knSetStreak);
+	
+	// Level methods
+	lua_register(script, "knLevelHitSomething", knLevelHitSomething);
+	lua_register(script, "knLevelStreakAbort", knLevelStreakAbort);
+	lua_register(script, "knLevelStreakInc", knLevelStreakInc);
+	lua_register(script, "knLevelAddScore", knLevelAddScore);
+	lua_register(script, "knLevelExplosion", knLevelExplosion);
+	
+	// Game methods
 	
 	return 0;
 }

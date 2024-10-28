@@ -1,5 +1,9 @@
 #include <inttypes.h>
 
+typedef struct QiVec3 {
+	float x, y, z;
+} QiVec3;
+
 #if defined(__ARM_ARCH_7A__)
 
 typedef struct Player {
@@ -10,9 +14,26 @@ typedef struct Player {
 	int mode;
 } Player;
 
+typedef struct Level {
+	char _unknown0[0xf4];
+	float offsetZ;
+} Level;
+
 typedef struct Game {
-	char _unknown0[0x30];
+	void *device;
+	void *input;
+	void *display;
+	void *renderer;
+	void *resman;
+	void *audio;
+	void *debug;
+	void *gfx;
+	void *scene1;
+	void *scene2;
+	void *scene3;
+	Level *level;
 	Player *player;
+	void *http_thread;
 	// incomplete
 } Game;
 
@@ -26,9 +47,26 @@ typedef struct Player {
 	int mode;
 } Player;
 
+typedef struct Level {
+	char _unknown0[0x124];
+	float offsetZ;
+} Level;
+
 typedef struct Game {
-	char _unknown0[0x60];
+	void *device;
+	void *input;
+	void *display;
+	void *renderer;
+	void *resman;
+	void *audio;
+	void *debug;
+	void *gfx;
+	void *scene1;
+	void *scene2;
+	void *scene3;
+	Level *level;
 	Player *player;
+	void *http_thread;
 	// incomplete
 } Game;
 
