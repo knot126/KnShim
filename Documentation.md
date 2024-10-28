@@ -110,6 +110,10 @@ knSetStreak(35)
 
 ## System and Misc utilities
 
+### `knGetShimVersion()`
+
+Return the shim version as an integer. Newer versions MUST always return higher values than older ones.
+
 ### `knGetInternalDataPath()`
 
 Return the absolute path to the internal data directory (where the savegames and the like are stored - equivlent to `user://`) with no trailing slash.
