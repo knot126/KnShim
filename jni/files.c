@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "lua/lua.h"
 #include "lua/lualib.h"
@@ -101,9 +102,35 @@ int knReadFile(lua_State *script) {
     return 1;
 }
 
+int knMakeDir(lua_State *script) {
+    if (lua_gettop(script) < 1) {
+        lua_pushboolean(script, 0);
+        return 1;
+    }
+    
+    const char *dirname = lua_tostring(script, 1);
+    
+    if (!dirname) {
+        lua_pushboolean(script, 0);
+        return 1;
+    }
+    
+    int status = mkdir(dirname, 0777);
+    
+    if (status == 0) {
+        lua_pushboolean(script, 1);
+    }
+    else {
+        lua_pushboolean(script, 0);
+    }
+    
+    return 1;
+}
+
 int knEnableFile(lua_State *script) {
     lua_register(script, "knWriteFile", knWriteFile);
     lua_register(script, "knReadFile", knReadFile);
+    lua_register(script, "knMakeDir", knMakeDir);
     
     return 0;
 }
