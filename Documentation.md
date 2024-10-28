@@ -237,8 +237,26 @@ Write a file with the given contents, which may contain embedded zeros. Returns 
 
 Read the contents of the given file. Returns a string with the contents on success, even if the file is empty, or nil on failure.
 
-## Troubleshooting
+## Game Control
 
-### Note on Android SDK level
+The game control features allow you to control aspects of the gameplay.
 
-If you changed the target SDK to something above 28, you will need to revert it to 28. The shim is not yet compatible with API level 29 or above.
+### `knSetBalls(balls)`
+
+Set the player's number of balls to `balls`.
+
+For example, to set the player's number of balls to 100:
+
+```lua
+knSetBalls(100)
+```
+
+### `knSetStreak(streak)`
+
+Set the player's streak.
+
+For example, to set a four-ball multiball plus halfway to a five-ball multiball:
+
+```lua
+knSetStreak(35)
+```
