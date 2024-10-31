@@ -100,7 +100,14 @@ int invert_branch(void *addr) {
 	#endif
 }
 
+// ARM Architecture Reference Manual for A-profile architecture F5.1.74
+// Using P==0 and W==0
+#define AARCH32_MAKE_LDR_LITERAL(U, Rt, imm12) ( (0b11100100 << 24) | ((U & 1) << 23) | (0b0011111 << 16) | ((Rt & 0xf) << 12) | (imm12 & 0xfff))
+// ARM Architecture Reference Manual for A-profile architecture F5.1.27
+#define AARCH32_MAKE_BX(Rm) ( (0b1110000100101111111111110001 << 4) | (Rm & 0xf) )
+
 // ARM Architecture Reference Manual for A-profile architecture C6.2.185
+// Uses 64-bit variant
 #define AARCH64_MAKE_LDRX_LITERAL(Rt, imm19) ( (0b01011000 << 24) | (((imm19 >> 2) & 0b1111111111111111111) << 5) | (Rt & 0b11111) )
 // ARM Architecture Reference Manual for A-profile architecture C6.2.38
 #define AARCH64_MAKE_BR(Rn) ( (0b1101011000011111000000 << 10) | ((Rn & 0b11111) << 5) )
@@ -108,21 +115,33 @@ int invert_branch(void *addr) {
 int replace_function(void *from, void *to) {
 	/**
 	 * Make it so that calls to `from` will be redirected to `to` in the future.
-	 * Returns 0 on success, or nonzero on failure.
+	 * Returns 0 on success, or nonzero on failure. This is similar to a hook
+	 * but doesn't allow you to call the original implementation.
 	 */
 	
 	#if defined(__ARM_ARCH_7A__)
-	return 1;
+	uint32_t *instructions = (uint32_t *) from;
+	
+	// The situtation is pretty similar on AArch32 as it is to AArch64. The
+	// biggest difference is that ip/r12 is the register that can be corrupted
+	// according to the AArch32 PCS. The only thing to note is that the PC
+	// points to the current instruction address plus 8.
+	instructions[0] = AARCH32_MAKE_LDR_LITERAL(1, 12, 0);
+	instructions[1] = AARCH32_MAKE_BX(12);
+	instructions[2] = (uint32_t) to;
+	
+	return 0;
 	#elif defined(__aarch64__)
+	uint32_t *instructions = (uint32_t *) from;
+	uint32_t *to_parts = (uint32_t *) &to;
+	
 	// Unfortunately, we can't just load our value directly into the PC since
 	// the PC isn't a general purpose register in AArch64. Instead, we can load
 	// the address into x16 or x17 (which according to the AArch64 Procedure
 	// Call Standard can be corrupted between a branch to a function and its
 	// first instruction for things like veneers which is basically what we're
 	// creating) then branch to it.
-	uint32_t *instructions = (uint32_t *) from;
-	uint32_t *to_parts = (uint32_t *) &to;
-	
+	// 
 	// On AArch64 the PC points to current instruction so we need to load from
 	// 8 bytes after the current PC. I *think* immidate ldr should allow somewhat
 	// unaligned access as long as they are a multipule of four so it shouldn't
