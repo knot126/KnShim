@@ -41,7 +41,7 @@ size_t KNCipher_writeInternal(QiFileOutputStream *stream, char *buffer, size_t l
 	// just stat() it.
 	struct stat stream_stats;
 	if (fstat(fileno(stream->file), &stream_stats) == 0) {
-		pos = stream_stats->st_size;
+		pos = stream_stats.st_size;
 	}
 	
 	char *buffer_crypt = KNCipher_MemDup(buffer, length);
