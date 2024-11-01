@@ -1,39 +1,51 @@
 #ifdef BUILD_CIPHER
 #include <stdio.h>
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <string.h>
 #include <android/log.h>
 #include "smashhit.h"
 #include "util.h"
 
 // Should define a function with the declaration:
-// int MyCipher(void *buffer, size_t length, size_t counter, int mode)
+// void MyCipher(void *buffer, size_t length, size_t counter)
 #include "../../KnShimCipher/cipher.h"
 
+char *KNCipher_MemDup(char *buffer, size_t length) {
+	char *new = malloc(length);
+	
+	if (new) {
+		memcpy(new, buffer, length);
+	}
+	
+	return new;
+}
+
 size_t KNCipher_readInternal(QiFileInputStream *stream, char *buffer, size_t length) {
-	__android_log_write(ANDROID_LOG_INFO, "SmashHitCryptor", "doing custom readInternal");
+	int pos = stream->headpos;
 	
 	if (fread(buffer, 1, length, stream->file) != length) {
-		__android_log_write(ANDROID_LOG_INFO, "SmashHitCryptor", "custom asset reading failed");
 		return 0;
 	}
-	else {
-		__android_log_write(ANDROID_LOG_INFO, "SmashHitCryptor", "read success");
-	}
+	
+	MyCipher(buffer, length, pos);
 	
 	return 1;
 }
 
 size_t KNCipher_writeInternal(QiFileOutputStream *stream, char *buffer, size_t length) {
-	__android_log_write(ANDROID_LOG_INFO, "SmashHitCryptor", "doing custom writeInternal");
+	char *buffer_crypt = KNCipher_MemDup(buffer, length);
 	
-	if (fwrite(buffer, 1, length, stream->file) != length) {
-		__android_log_write(ANDROID_LOG_INFO, "SmashHitCryptor", "custom write failed");
+	if (!buffer_crypt) { return 0; }
+	
+	MyCipher(buffer_crypt, length, ftell(stream->file));
+	
+	if (fwrite(buffer_crypt, 1, length, stream->file) != length) {
+		free(buffer_crypt);
 		return 0;
 	}
-	else {
-		__android_log_write(ANDROID_LOG_INFO, "SmashHitCryptor", "write success");
-	}
 	
+	free(buffer_crypt);
 	return 1;
 }
 
