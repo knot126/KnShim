@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <stdio.h>
 
 typedef struct QiVec3 {
 	float x, y, z;
@@ -37,6 +38,21 @@ typedef struct Game {
 	// incomplete
 } Game;
 
+typedef struct QiFileInputStream {
+	char _unknown0[0xc];
+	FILE *file;
+	char _qistring_path[0x2c];
+	int length;
+	int headpos;
+	size_t _unknown1;
+} QiFileInputStream;
+
+typedef struct QiFileOutputStream {
+	char _unknown0[0xc];
+	FILE *file;
+	char _qistring_path[0x2c];
+} QiFileOutputStream;
+
 #elif defined(__aarch64__)
 
 typedef struct Player {
@@ -69,6 +85,21 @@ typedef struct Game {
 	void *http_thread;
 	// incomplete
 } Game;
+
+typedef struct QiFileInputStream {
+	char _unknown0[0x10];
+	FILE *file;
+	char _qistring_path[0x30];
+	int length;
+	int headpos;
+	size_t _unknown1;
+} QiFileInputStream;
+
+typedef struct QiFileOutputStream {
+	char _unknown0[0x10];
+	FILE *file;
+	char _qistring_path[0x30];
+} QiFileOutputStream;
 
 #else
 #warning smashhit.h not defined for this platform

@@ -35,7 +35,7 @@ int set_memory_protection(void *addr, size_t length, int protection) {
 	addr -= align_diff;
 	length += align_diff;
 	
-	__android_log_print(ANDROID_LOG_INFO, TAG, "unprotecting 0x%zx bytes at <%p> (aligned to %zu)", length, addr, page_size);
+	__android_log_print(ANDROID_LOG_INFO, TAG, "set prot 0x%x for 0x%zx bytes at <%p> (aligned to %zu)", protection, length, addr, page_size);
 	
 	int result = mprotect(addr, length, protection);
 	
@@ -115,8 +115,9 @@ int invert_branch(void *addr) {
 int replace_function(void *from, void *to) {
 	/**
 	 * Make it so that calls to `from` will be redirected to `to` in the future.
-	 * Returns 0 on success, or nonzero on failure. This is similar to a hook
-	 * but doesn't allow you to call the original implementation.
+	 * Returns number of bytes written on success, zero on failure. This is
+	 * similar to a hook but doesn't allow you to call the original function.
+	 * It can be used as a primitive for a hook.
 	 */
 	
 	#if defined(__ARM_ARCH_7A__)
@@ -130,7 +131,7 @@ int replace_function(void *from, void *to) {
 	instructions[1] = AARCH32_MAKE_BX(12);
 	instructions[2] = (uint32_t) to;
 	
-	return 0;
+	return 12;
 	#elif defined(__aarch64__)
 	uint32_t *instructions = (uint32_t *) from;
 	uint32_t *to_parts = (uint32_t *) &to;
@@ -151,8 +152,8 @@ int replace_function(void *from, void *to) {
 	instructions[2] = to_parts[0];
 	instructions[3] = to_parts[1];
 	
-	return 0;
+	return 16;
 	#else
-	return 1;
+	return 0;
 	#endif
 }
