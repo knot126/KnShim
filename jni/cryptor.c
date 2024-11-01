@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <android/log.h>
+#include <sys/stat.h>
 #include "smashhit.h"
 #include "util.h"
 
@@ -34,11 +35,20 @@ size_t KNCipher_readInternal(QiFileInputStream *stream, char *buffer, size_t len
 }
 
 size_t KNCipher_writeInternal(QiFileOutputStream *stream, char *buffer, size_t length) {
+	size_t pos = 0;
+	
+	// Get counter position -- since this is a write only stream its fine to
+	// just stat() it.
+	struct stat stream_stats;
+	if (fstat(fileno(stream->file), &stream_stats) == 0) {
+		pos = stream_stats->st_size;
+	}
+	
 	char *buffer_crypt = KNCipher_MemDup(buffer, length);
 	
 	if (!buffer_crypt) { return 0; }
 	
-	MyCipher(buffer_crypt, length, ftell(stream->file));
+	MyCipher(buffer_crypt, length, pos);
 	
 	if (fwrite(buffer_crypt, 1, length, stream->file) != length) {
 		free(buffer_crypt);
