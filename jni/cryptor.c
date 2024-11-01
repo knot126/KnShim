@@ -9,7 +9,7 @@
 #include "util.h"
 
 // Should define a function with the declaration:
-// void MyCipher(void *buffer, size_t length, size_t counter)
+// void MyCipher(void *buffer, size_t length, size_t counter, uint32_t mode)
 #include "../../KnShimCipher/cipher.h"
 
 char *KNCipher_MemDup(char *buffer, size_t length) {
@@ -29,7 +29,7 @@ size_t KNCipher_readInternal(QiFileInputStream *stream, char *buffer, size_t len
 		return 0;
 	}
 	
-	MyCipher(buffer, length, pos);
+	MyCipher(buffer, length, pos, 0);
 	
 	return 1;
 }
@@ -48,7 +48,7 @@ size_t KNCipher_writeInternal(QiFileOutputStream *stream, char *buffer, size_t l
 	
 	if (!buffer_crypt) { return 0; }
 	
-	MyCipher(buffer_crypt, length, pos);
+	MyCipher(buffer_crypt, length, pos, 1);
 	
 	if (fwrite(buffer_crypt, 1, length, stream->file) != length) {
 		free(buffer_crypt);
