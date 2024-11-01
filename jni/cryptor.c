@@ -31,6 +31,8 @@ size_t KNCipher_readInternal(QiFileInputStream *stream, char *buffer, size_t len
 	
 	MyCipher(buffer, length, pos, 0);
 	
+	stream->headpos += length;
+	
 	return 1;
 }
 
