@@ -63,8 +63,15 @@ size_t KNCipher_writeInternal(QiFileOutputStream *stream, char *buffer, size_t l
 
 void KNCipherInit(void *libsmashhit) {
 	// TODO these names vary by arch
+#if defined(__ARM_ARCH_7A__)
+	void *readInternal = dlsym(libsmashhit, "_ZN17QiFileInputStream12readInternalEPcj");
+	void *writeInternal = dlsym(libsmashhit, "_ZN18QiFileOutputStream13writeInternalEPKcj");
+#elif defined(__aarch64__)
 	void *readInternal = dlsym(libsmashhit, "_ZN17QiFileInputStream12readInternalEPcm");
 	void *writeInternal = dlsym(libsmashhit, "_ZN18QiFileOutputStream13writeInternalEPKcm");
+#else
+#error Unsupported platform
+#endif
 	
 	// WARNING set_memory_protection with exec doesnt work on modern android even
 	// if its RX, why!?
