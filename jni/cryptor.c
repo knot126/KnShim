@@ -9,10 +9,12 @@
 #include "util.h"
 
 // Should define a function with the declaration:
-// void MyCipher(void *buffer, size_t length, size_t counter, uint32_t mode)
+// void MyCipher(const char *path, void *buffer, size_t length, size_t counter, uint32_t mode)
+// mode is 0 if read, 1 if write
+// path could be used as a primitive nonce
 #include "../../KnShimCipher/cipher.h"
 
-char *KNCipher_MemDup(char *buffer, size_t length) {
+static char *KNCipher_MemDup(char *buffer, size_t length) {
 	char *new = malloc(length);
 	
 	if (new) {
@@ -22,6 +24,10 @@ char *KNCipher_MemDup(char *buffer, size_t length) {
 	return new;
 }
 
+static const char *KNCipher_GetQiStringData(QiString *string) {
+	return string->data ? string->data : string->cached;
+}
+
 size_t KNCipher_readInternal(QiFileInputStream *stream, char *buffer, size_t length) {
 	int pos = stream->headpos;
 	
@@ -29,7 +35,7 @@ size_t KNCipher_readInternal(QiFileInputStream *stream, char *buffer, size_t len
 		return 0;
 	}
 	
-	MyCipher(buffer, length, pos, 0);
+	MyCipher(KNCipher_GetQiStringData(&stream->path), buffer, length, pos, 0);
 	
 	stream->headpos += length;
 	
@@ -50,7 +56,7 @@ size_t KNCipher_writeInternal(QiFileOutputStream *stream, char *buffer, size_t l
 	
 	if (!buffer_crypt) { return 0; }
 	
-	MyCipher(buffer_crypt, length, pos, 1);
+	MyCipher(KNCipher_GetQiStringData(&stream->path), buffer_crypt, length, pos, 1);
 	
 	if (fwrite(buffer_crypt, 1, length, stream->file) != length) {
 		free(buffer_crypt);

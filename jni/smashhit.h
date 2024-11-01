@@ -5,6 +5,13 @@ typedef struct QiVec3 {
 	float x, y, z;
 } QiVec3;
 
+typedef struct QiString {
+	char *data;
+	int allocated_size;
+	int length;
+	char cached[32];
+} QiString;
+
 #if defined(__ARM_ARCH_7A__)
 
 typedef struct Player {
@@ -41,7 +48,7 @@ typedef struct Game {
 typedef struct QiFileInputStream {
 	char _unknown0[0xc];
 	FILE *file;
-	char _qistring_path[0x2c];
+	QiString path;
 	int length;
 	int headpos;
 	size_t _unknown1;
@@ -50,7 +57,7 @@ typedef struct QiFileInputStream {
 typedef struct QiFileOutputStream {
 	char _unknown0[0xc];
 	FILE *file;
-	char _qistring_path[0x2c];
+	QiString path;
 } QiFileOutputStream;
 
 #elif defined(__aarch64__)
@@ -89,7 +96,7 @@ typedef struct Game {
 typedef struct QiFileInputStream {
 	char _unknown0[0x10];
 	FILE *file;
-	char _qistring_path[0x30];
+	QiString path;
 	int length;
 	int headpos;
 	size_t _unknown1;
@@ -98,7 +105,7 @@ typedef struct QiFileInputStream {
 typedef struct QiFileOutputStream {
 	char _unknown0[0x10];
 	FILE *file;
-	char _qistring_path[0x30];
+	QiString path;
 } QiFileOutputStream;
 
 #else
