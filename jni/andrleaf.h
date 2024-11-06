@@ -44,12 +44,13 @@ typedef struct Leaf {
 	LeafEhdr *ehdr;
 	LeafPhdr **phdrs;
 	void *blob;
+	size_t blob_length;
 	void **dl_handles;
 	size_t dl_handle_count;
 	const char *strtab;
 	LeafSym *symtab;
 	size_t sym_count;
-	void *fini_array;
+	void **fini_array;
 	size_t fini_count;
 } Leaf;
 
@@ -255,6 +256,7 @@ const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length) {
 	
 	// Map memory for loadable segments, copy their contents
 	self->blob = LeafMakeMap(highest);
+	self->blob_length = highest;
 	
 	if (self->blob == MAP_FAILED) {
 		return strerror(errno);
@@ -304,10 +306,10 @@ const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length) {
 	size_t sym_count = 0;
 	size_t sym_ent_size;
 	
-	void *init_array = NULL;
+	void **init_array = NULL;
 	size_t init_array_size;
 	
-	void *fini_array = NULL;
+	void **fini_array = NULL;
 	size_t fini_array_size;
 	
 	for (size_t i = 0; dyns[i].d_tag != DT_NULL; i++) {
@@ -544,11 +546,9 @@ const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length) {
 		
 		__android_log_print(ANDROID_LOG_INFO, "leaflib", "Func addr: <%p>\n", func);
 		
-#ifndef JANK_TESTING_ONLY
 		if (func) {
 			func();
 		}
-#endif
 	}
 	
 	LeafStreamFree(stream); // TODO free if it fails
@@ -573,7 +573,6 @@ void LeafDoRela(Leaf *self, LeafRela *relocs, size_t reloc_count) {
 			case R_AARCH64_GLOB_DAT:
 			case R_AARCH64_JUMP_SLOT: {
 				LeafSym *sym = &self->symtab[LeafRelocSym(rela->r_info)];
-				// __android_log_print(ANDROID_LOG_INFO, "leaflib", "process reloc: %s (0x%016zx) + 0x%zx\n", self->strtab + sym->st_name, sym->st_value, rela->r_addend);
 				*((size_t *)where) = sym->st_value + rela->r_addend;
 				break;
 			}
@@ -598,14 +597,18 @@ void LeafDoRel(Leaf *self, LeafRel *relocs, size_t reloc_count) {
 				*((void **)where) = result;
 				break;
 			}
-			case R_ARM_GLOB_DAT:
-			case R_ARM_JUMP_SLOT: {
+			case R_ARM_GLOB_DAT: {
+				// <place> = (S + A) | T
 				LeafSym *sym = &self->symtab[LeafRelocSym(rel->r_info)];
-				size_t origval = *((size_t *)where);
-				// *((size_t *)where) += (sym->st_value & 1) ? (sym->st_value ^ 1) : sym->st_value;
-				// *((size_t *)where) |= (LeafSymType(sym->st_info) == STT_FUNC && (sym->st_value & 1)) ? 1 : 0;
+				*((size_t *)where) += (sym->st_value & 1) ? (sym->st_value ^ 1) : sym->st_value;
+				*((size_t *)where) |= (LeafSymType(sym->st_info) == STT_FUNC && (sym->st_value & 1)) ? 1 : 0;
+				break;
+			}
+			case R_ARM_JUMP_SLOT: {
+				// From the manual for jump slots in REL form:
+				// "In a REL form of this relocation the addend, A, is always 0."
+				LeafSym *sym = &self->symtab[LeafRelocSym(rel->r_info)];
 				*((size_t *) where) = sym->st_value;
-				__android_log_print(ANDROID_LOG_INFO, "leaflib", "GLOB_DAT/JUMP_SLOT symval=0x%08zx origval=0x%08zx resultval=0x%08zx\n", sym->st_value, origval, *((size_t *)where));
 				break;
 			}
 			default: {
@@ -680,7 +683,58 @@ LeafSym *LeafSymbolInfo(Leaf *self, const char *symbol_name) {
 	return NULL;
 }
 
+void LeafFinish(Leaf *self) {
+	/**
+	 * Use LeafFree() unless you are probably just going to rely on exiting the
+	 * app to free the ELF data. This is fine for use in an atexit() handler
+	 * with a global variable.
+	 */
+	
+	__android_log_print(ANDROID_LOG_INFO, "leaflib", "Calling %d fini functions...", self->fini_count);
+	
+	// remember: run them backwards
+	for (size_t i = 1; i <= self->fini_count; i++) {
+		void(*func)(void) = self->fini_array[self->fini_count - i];
+		
+		__android_log_print(ANDROID_LOG_INFO, "leaflib", "Func addr: <%p>\n", func);
+		
+		if (func) {
+			func();
+		}
+	}
+}
+
 void LeafFree(Leaf *self) {
+	/**
+	 * Free a loaded binary and any associated resources
+	 */
+	
+	// Call fini funcs
+	LeafFinish(self);
+	
+	// Close and free dl_handles
+	for (size_t i = 0; i < self->dl_handle_count; i++) {
+		if (self->dl_handles[i]) {
+			dlclose(self->dl_handles[i]);
+		}
+	}
+	
+	free(self->dl_handles);
+	
+	// Free program headers
+	for (size_t i = 0; self->phdrs[i] != NULL; i++) {
+		free(self->phdrs[i]);
+	}
+	
+	free(self->phdrs);
+	
+	// Everything else is just a pointer to something in the loaded program
+	// memory...
+	
+	// Unmap program memory
+	munmap(self->blob, self->blob_length);
+	
+	// Free own memory
 	free(self);
 	
 	return;
