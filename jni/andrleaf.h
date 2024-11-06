@@ -17,6 +17,7 @@
 #define LeafEhdr Elf32_Ehdr
 #define LeafPhdr Elf32_Phdr
 #define LeafDyn  Elf32_Dyn
+#define LeafRel  Elf32_Rel
 #define LeafRela Elf32_Rela
 #define LeafSym  Elf32_Sym
 #define LeafAddr Elf32_Addr
@@ -27,12 +28,17 @@
 #define LeafEhdr Elf64_Ehdr
 #define LeafPhdr Elf64_Phdr
 #define LeafDyn  Elf64_Dyn
+#define LeafRel  Elf64_Rel
 #define LeafRela Elf64_Rela
 #define LeafSym  Elf64_Sym
 #define LeafAddr Elf64_Addr
 #define LeafRelocSym(i) (i >> 32)
 #define LeafRelocType(i) (i & 0xffffffff)
 #endif
+
+// Same for 32/64 bit
+#define LeafSymBind(i) (i >> 4)
+#define LeafSymType(i) (i & 0xf)
 
 typedef struct Leaf {
 	LeafEhdr *ehdr;
@@ -53,7 +59,12 @@ typedef struct LeafStream {
 	size_t pos;
 } LeafStream;
 
+Leaf *LeafInit(void);
+const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length);
+const char *LeafLoadFromFile(Leaf *self, const char *path);
+void *LeafSymbolAddr(Leaf *self, const char *symbol_name);
 LeafSym *LeafSymbolInfo(Leaf *self, const char *symbol_name);
+void LeafFree(Leaf *self);
 
 #ifdef LEAF_IMPLEMENTATION
 
@@ -128,7 +139,7 @@ static void LeafStreamFree(LeafStream *self) {
 ////////////////////////////////////////////////////////////////////////////////
 // Stub functions
 /////////////////
-int Leaf__cxa_atexit(void (*func)(void *), void *arg, void *dso_handle) {
+static int Leaf__cxa_atexit(void (*func)(void *), void *arg, void *dso_handle) {
 	__android_log_print(ANDROID_LOG_INFO, "leaflib", "__cxa_atexit(<%p>, <%p>, <%p>)", func, arg, dso_handle);
 	return 0;
 }
@@ -153,13 +164,14 @@ Leaf *LeafInit(void) {
 	return self;
 }
 
-void *LeafMakeMap(size_t size) {
+static void *LeafMakeMap(size_t size) {
 	return mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 
 uint8_t ELF_SIGNATURE[] = {0x7f, 'E', 'L', 'F'};
 
 void LeafDoRela(Leaf *self, LeafRela *relocs, size_t reloc_count);
+void LeafDoRel(Leaf *self, LeafRel *relocs, size_t reloc_count);
 
 const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length) {
 	/**
@@ -279,6 +291,8 @@ const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length) {
 	const char *strtab = NULL;
 	size_t strtab_size;
 	
+	size_t reloc_types; // HACK the entire handling of reloc types is hacky
+	
 	LeafRela *relocs = NULL;
 	size_t reloc_size;
 	size_t reloc_ent_size;
@@ -346,14 +360,27 @@ const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length) {
 				__android_log_print(ANDROID_LOG_INFO, "leaflib", "Leaf: DT_SYMBOLIC\n");
 				break;
 			}
+			case DT_REL: {
+				relocs = self->blob + dyns[i].d_un.d_ptr;
+				break;
+			}
+			case DT_RELSZ: {
+				reloc_size = dyns[i].d_un.d_val;
+				break;
+			}
+			case DT_RELENT: {
+				reloc_ent_size = dyns[i].d_un.d_val;
+				break;
+			}
 			case DT_BIND_NOW: {
 				__android_log_print(ANDROID_LOG_INFO, "leaflib", "Leaf: DT_BIND_NOW\n");
 				break;
 			}
 			case DT_PLTREL: {
-				if (dyns[i].d_un.d_val != DT_RELA) {
-					return "Using ElfXX_Rel instead of ElfX_Rela for PLT is not supported";
-				}
+				// if (dyns[i].d_un.d_val != DT_RELA) {
+				// 	return "Using ElfXX_Rel instead of ElfX_Rela for PLT is not supported";
+				// }
+				reloc_types = dyns[i].d_un.d_val;
 				break;
 			}
 			case DT_JMPREL: {
@@ -467,12 +494,20 @@ const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length) {
 	
 	// Replace __cxa_atexit with our own dummy
 	LeafSym *p_cxa_atexit_sym = LeafSymbolInfo(self, "__cxa_atexit");
+	LeafSym *p_aeabi_atexit_sym = LeafSymbolInfo(self, "__aeabi_atexit");
 	
 	if (p_cxa_atexit_sym) {
 		p_cxa_atexit_sym->st_value = (size_t) &Leaf__cxa_atexit;
 	}
 	else {
 		__android_log_print(ANDROID_LOG_INFO, "leaflib", "Symbol __cxa_atexit not found for replacement\n");
+	}
+	
+	if (p_aeabi_atexit_sym) {
+		p_aeabi_atexit_sym->st_value = (size_t) &Leaf__cxa_atexit;
+	}
+	else {
+		__android_log_print(ANDROID_LOG_INFO, "leaflib", "Symbol __aeabi_atexit not found for replacement\n");
 	}
 	
 	// debug: basic dump of symbol table
@@ -484,10 +519,19 @@ const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length) {
 	// Preform relocations
 	size_t reloc_count = reloc_size / reloc_ent_size;
 	size_t plt_reloc_count = plt_relocs_size / reloc_ent_size;
-	__android_log_print(ANDROID_LOG_INFO, "leaflib", "Will preform %zu relocations (DT_RELA)...\n", reloc_count);
-	LeafDoRela(self, relocs, reloc_count);
-	__android_log_print(ANDROID_LOG_INFO, "leaflib", "Will preform %zu relocations (DT_JMPREL)...\n", plt_reloc_count);
-	LeafDoRela(self, plt_relocs, plt_reloc_count);
+	
+	if (reloc_types == DT_RELA) {
+		__android_log_print(ANDROID_LOG_INFO, "leaflib", "Will preform %zu relocations (DT_RELA)...\n", reloc_count);
+		LeafDoRela(self, relocs, reloc_count);
+		__android_log_print(ANDROID_LOG_INFO, "leaflib", "Will preform %zu relocations (DT_JMPREL)...\n", plt_reloc_count);
+		LeafDoRela(self, plt_relocs, plt_reloc_count);
+	}
+	else {
+		__android_log_print(ANDROID_LOG_INFO, "leaflib", "Will preform %zu relocations (DT_REL)...\n", reloc_count);
+		LeafDoRel(self, (LeafRel*) relocs, reloc_count);
+		__android_log_print(ANDROID_LOG_INFO, "leaflib", "Will preform %zu relocations (DT_JMPREL)...\n", plt_reloc_count);
+		LeafDoRel(self, (LeafRel*) plt_relocs, plt_reloc_count);
+	}
 	
 	// Call init functions
 	// TODO
@@ -535,6 +579,37 @@ void LeafDoRela(Leaf *self, LeafRela *relocs, size_t reloc_count) {
 			}
 			default: {
 				__android_log_print(ANDROID_LOG_INFO, "leaflib", "Unknown reloc type: offset=0x%zx sym=0x%zx type=0x%zx addend=0x%zx\n", rela->r_offset, LeafRelocSym(rela->r_info), LeafRelocType(rela->r_info), rela->r_addend);
+				break;
+			}
+		}
+	}
+}
+
+void LeafDoRel(Leaf *self, LeafRel *relocs, size_t reloc_count) {
+	for (size_t i = 0; i < reloc_count; i++) {
+		LeafRel *rel = &relocs[i];
+		
+		void *where = self->blob + rel->r_offset;
+		
+		switch (LeafRelocType(rel->r_info)) {
+			// TODO other arches
+			case R_ARM_RELATIVE: {
+				void *result = self->blob + *((size_t *) where);
+				*((void **)where) = result;
+				break;
+			}
+			case R_ARM_GLOB_DAT:
+			case R_ARM_JUMP_SLOT: {
+				LeafSym *sym = &self->symtab[LeafRelocSym(rel->r_info)];
+				size_t origval = *((size_t *)where);
+				// *((size_t *)where) += (sym->st_value & 1) ? (sym->st_value ^ 1) : sym->st_value;
+				// *((size_t *)where) |= (LeafSymType(sym->st_info) == STT_FUNC && (sym->st_value & 1)) ? 1 : 0;
+				*((size_t *) where) = sym->st_value;
+				__android_log_print(ANDROID_LOG_INFO, "leaflib", "GLOB_DAT/JUMP_SLOT symval=0x%08zx origval=0x%08zx resultval=0x%08zx\n", sym->st_value, origval, *((size_t *)where));
+				break;
+			}
+			default: {
+				__android_log_print(ANDROID_LOG_INFO, "leaflib", "Unknown reloc type: offset=0x%zx sym=0x%zx type=0x%zx\n", rel->r_offset, LeafRelocSym(rel->r_info), LeafRelocType(rel->r_info));
 				break;
 			}
 		}

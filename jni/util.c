@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include "andrleaf.h"
 #include "util.h"
 
 #ifndef USE_LEAF

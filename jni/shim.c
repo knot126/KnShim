@@ -6,6 +6,10 @@
 #include <stdlib.h>
 
 #ifdef USE_LEAF
+#if defined(__ARM_ARCH_7A__)
+#define LEAF_32BIT
+#endif
+
 #define LEAF_IMPLEMENTATION
 #include "andrleaf.h"
 Leaf *gLeaf;
@@ -128,7 +132,7 @@ void android_main(struct android_app *app) {
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Leaf initialised");
+		__android_log_print(ANDROID_LOG_INFO, TAG, "Leaf initialised");
 	}
 	
 	// Load the contents of LSH
@@ -141,7 +145,7 @@ void android_main(struct android_app *app) {
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Loaded libsmashhit.so from native directory");
+		__android_log_print(ANDROID_LOG_INFO, TAG, "Loaded libsmashhit.so from native directory");
 	}
 	
 	// Load from the buffer we just read
@@ -152,7 +156,7 @@ void android_main(struct android_app *app) {
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Loading elf succeeded");
+		__android_log_print(ANDROID_LOG_INFO, TAG, "Loading elf succeeded");
 	}
 	
 	// Close asset handle, not needed anymore
