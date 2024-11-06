@@ -9,8 +9,6 @@
 #define LEAF_IMPLEMENTATION
 #include "../../Leaf/andrleaf.h"
 Leaf *gLeaf;
-void *gLibsmashhitData;
-size_t gLibsmashhitLength;
 #endif
 
 #include "lua/lua.h"
@@ -60,24 +58,28 @@ int load_lua_libs(lua_State *script) {
 	// Better file reading and writing
 	knEnableFile(script);
 	
+#ifndef USE_LEAF
 	// Game control
 	knEnableGamectl(script);
+#endif
 	
 	return 0;
 }
 
-int load_libsmashhit(struct android_app *app) {
+AAsset *load_libsmashhit(struct android_app *app, const void **data, size_t *length) {
 	// Read libsmashhit.so
 	AAssetManager *asset_manager = app->activity->assetManager;
 	
 	AAsset *asset = AAssetManager_open(asset_manager, "native/" KN_ARCH_STRING "/libsmashhit.so.mp3", AASSET_MODE_BUFFER);
 	
-	gLibsmashhitData = AAsset_getBuffer(asset);
-	gLibsmashhitLength = AAsset_getLength(asset);
+	if (!asset) {
+		return NULL;
+	}
 	
-	AAsset_close(asset);
+	length[0] = AAsset_getLength(asset);
+	data[0] = AAsset_getBuffer(asset);
 	
-	return gLibsmashhitData ? 0 : 1;
+	return asset;
 }
 
 #ifdef USE_LEAF
@@ -86,29 +88,49 @@ void android_main(struct android_app *app) {
 	gLeaf = LeafInit();
 	
 	if (!gLeaf) {
-		__android_log_print(ANDROID_LOG_FATAL, "leafshim", "Leaf init failed");
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Leaf init failed");
 		return;
 	}
+	else {
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Leaf initialised");
+	}
 	
-	// Load the contents of LSH into a buffer
-	if (load_libsmashhit(app)) {
-		__android_log_print(ANDROID_LOG_FATAL, "leafshim", "Failed to load libsmashhit.so from shim native dir");
+	// Load the contents of LSH
+	const void *data;
+	size_t length;
+	AAsset *asset = load_libsmashhit(app, &data, &length);
+	
+	if (!asset) {
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Failed to load libsmashhit.so from shim native dir");
 		return;
+	}
+	else {
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Loaded libsmashhit.so from native directory");
 	}
 	
 	// Load from the buffer we just read
-	const char *error = LeafLoadFromBuffer(gLeaf, gLibsmashhitData, gLibsmashhitLength);
+	const char *error = LeafLoadFromBuffer(gLeaf, (void *) data, length);
 	
 	if (error) {
-		__android_log_print(ANDROID_LOG_FATAL, "leafshim", "Leaf loading elf failed: %s", error);
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Leaf loading elf failed: %s", error);
 		return;
 	}
+	else {
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Loading elf succeeded");
+	}
 	
+	// Close asset handle, not needed anymore
+	AAsset_close(asset);
+	
+	// Get main func and call
 	AndroidMainFunc func = LeafSymbolAddr(gLeaf, "android_main");
 	
 	if (!func) {
-		__android_log_print(ANDROID_LOG_FATAL, "leafshim", "Could not find android_main");
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Could not find android_main()");
 		return;
+	}
+	else {
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Found android_main() at %p", func);
 	}
 	
 	func(app);

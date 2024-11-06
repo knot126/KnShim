@@ -20,6 +20,7 @@ enum {
     KN_TYPE_BYTES,
 };
 
+#ifndef USE_LEAF
 int knSymbolAddr(lua_State *script) {
     /**
      * addr = knSymbolAddr(symbolName)
@@ -38,6 +39,7 @@ int knSymbolAddr(lua_State *script) {
     lua_pushinteger(script, sym);
     return 1;
 }
+#endif
 
 int knPeek(lua_State *script) {
     /**
@@ -143,6 +145,7 @@ int knPoke(lua_State *script) {
     return 1;
 }
 
+#ifndef USE_LEAF
 int knUnprotect(lua_State *script) {
     /**
      * success = knUnprotect(addr, len)
@@ -187,6 +190,7 @@ int knSetMemoryProtection(lua_State *script) {
     
     return 1;
 }
+#endif
 
 int knSystemAbi(lua_State *script) {
     /**
@@ -244,11 +248,15 @@ int knInvertBranch(lua_State *script) {
 // END MEMORY
 
 int knEnablePeekPoke(lua_State *script) {
+#ifndef USE_LEAF
     lua_register(script, "knSymbolAddr", knSymbolAddr);
+#endif
     lua_register(script, "knPeek", knPeek);
     lua_register(script, "knPoke", knPoke);
+#ifndef USE_LEAF
     lua_register(script, "knUnprotect", knUnprotect);
     lua_register(script, "knSetMemoryProtection", knSetMemoryProtection);
+#endif
     lua_register(script, "knSystemAbi", knSystemAbi);
     lua_register(script, "knInvertBranch", knInvertBranch);
     

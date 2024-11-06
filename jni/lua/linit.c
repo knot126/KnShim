@@ -35,10 +35,12 @@ LUALIB_API void luaL_openlibs (lua_State *L) {
     lua_pushstring(L, lib->name);
     lua_call(L, 1, 0);
   }
+#ifndef USE_LEAF
   // Fixes some weird stuff that happens when we use the libshim.so one
   // Mainly a crash somewhere down the call stack in lua_rawseti
   lua_pushcfunction(L, (lua_CFunction) dlsym(gLibsmashhitHandle, "luaopen_table"));
   lua_pushstring(L, "table");
   lua_call(L, 1, 0);
+#endif
 }
 

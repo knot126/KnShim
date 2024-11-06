@@ -2,6 +2,7 @@
  * Game control (such as setting balls, streak, gamemode etc)
  */
 
+#ifndef USE_LEAF
 #include <dlfcn.h>
 
 #include "lua/lua.h"
@@ -88,3 +89,4 @@ int knEnableGamectl(lua_State *script) {
 	
 	return 0;
 }
+#endif
