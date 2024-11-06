@@ -21,12 +21,6 @@ enum {
 	KN_MEM_READ_ONLY = PROT_READ,
 };
 
-#ifndef USE_LEAF
-extern void *gLibsmashhitHandle;
-#else
-extern Leaf *gLeaf;
-#endif
-
 int set_memory_protection(void *addr, size_t length, int protection);
 int unprotect_memory(void *addr, size_t length);
 void *KNGetSymbolAddr(const char *name);

@@ -6,6 +6,12 @@
 
 #include "util.h"
 
+#ifndef USE_LEAF
+extern void *gLibsmashhitHandle;
+#else
+extern Leaf *gLeaf;
+#endif
+
 int unprotect_memory(void *addr, size_t length) {
 	size_t page_size = getpagesize();
 	size_t align_diff = (size_t)addr % page_size; 
