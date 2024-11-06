@@ -59,17 +59,13 @@ int load_lua_libs(lua_State *script) {
 	// Better file reading and writing
 	knEnableFile(script);
 	
-#ifndef USE_LEAF
 	// Game control
 	knEnableGamectl(script);
-#endif
 	
 	return 0;
 }
 
 #ifdef USE_LEAF
-typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
-
 void KNInitLua(struct android_app *app, Leaf *leaf) {
 	// Install the Lua extensions
 	

@@ -246,9 +246,7 @@ int knInvertBranch(lua_State *script) {
 // END MEMORY
 
 int knEnablePeekPoke(lua_State *script) {
-#ifndef USE_LEAF
     lua_register(script, "knSymbolAddr", knSymbolAddr);
-#endif
     lua_register(script, "knPeek", knPeek);
     lua_register(script, "knPoke", knPoke);
 #ifndef USE_LEAF

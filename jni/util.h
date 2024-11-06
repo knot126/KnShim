@@ -1,6 +1,7 @@
 #ifndef _SHIM_UTIL_H
 #define _SHIM_UTIL_H
 
+#include <android_native_app_glue.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include "andrleaf.h"
@@ -20,6 +21,8 @@ enum {
 	KN_MEM_READ_RUN = PROT_READ | PROT_EXEC,
 	KN_MEM_READ_ONLY = PROT_READ,
 };
+
+typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
 
 int set_memory_protection(void *addr, size_t length, int protection);
 int unprotect_memory(void *addr, size_t length);
