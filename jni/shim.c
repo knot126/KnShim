@@ -7,8 +7,9 @@
 
 #ifdef USE_LEAF
 #define LEAF_IMPLEMENTATION
-#include "../../Leaf/andrleaf.h"
+#include "andrleaf.h"
 Leaf *gLeaf;
+#undef LEAF_IMPLEMENTATION
 #endif
 
 #include "lua/lua.h"
@@ -66,6 +67,39 @@ int load_lua_libs(lua_State *script) {
 	return 0;
 }
 
+#ifdef USE_LEAF
+typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
+
+void KNInitLua(struct android_app *app, Leaf *leaf) {
+	// Install the Lua extensions
+	
+	// By some luck ARM32 and ARM64 only differ by the pointer size here - the
+	// lua_openlibs reg table is the same offset from this symbol aside from that!
+	luaL_Reg *lua_reg_table = (luaL_Reg *) (LeafSymbolAddr(leaf, "_ZTV17QiFileInputStream") + 6 * sizeof(void *));
+	
+	if (!lua_reg_table) {
+		__android_log_print(ANDROID_LOG_ERROR, TAG, "Failed to find lua register table");
+		return;
+	}
+	
+	// smash hit always loads it's own luaopen_base first
+	// regardless of what's in the array so we actually load second
+	// and avoid loading the base lib.
+	lua_reg_table[1].name = "";
+	lua_reg_table[1].func = load_lua_libs;
+	lua_reg_table[2].name = NULL;
+	lua_reg_table[2].func = NULL;
+	
+	// Set internal and external data paths
+	gAndroidInternalDataPath = strdup(app->activity->internalDataPath);
+	gAndroidExternalDataPath = strdup(app->activity->externalDataPath);
+}
+
+ModuleInitFunc gModuleInitFuncs[] = {
+	KNInitLua,
+	NULL,
+};
+
 AAsset *load_libsmashhit(struct android_app *app, const void **data, size_t *length) {
 	// Read libsmashhit.so
 	AAssetManager *asset_manager = app->activity->assetManager;
@@ -82,7 +116,6 @@ AAsset *load_libsmashhit(struct android_app *app, const void **data, size_t *len
 	return asset;
 }
 
-#ifdef USE_LEAF
 void android_main(struct android_app *app) {
 	// Create an instance of Leaf for loading the main binary
 	gLeaf = LeafInit();
@@ -121,6 +154,11 @@ void android_main(struct android_app *app) {
 	
 	// Close asset handle, not needed anymore
 	AAsset_close(asset);
+	
+	// Install modules
+	for (size_t i = 0; gModuleInitFuncs[i] != NULL; i++) {
+		(gModuleInitFuncs[i])(app, gLeaf);
+	}
 	
 	// Get main func and call
 	AndroidMainFunc func = LeafSymbolAddr(gLeaf, "android_main");

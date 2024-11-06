@@ -46,6 +46,19 @@ int set_memory_protection(void *addr, size_t length, int protection) {
 	return result;
 }
 
+void *KNGetSymbolAddr(const char *name) {
+	/**
+	 * Get the address of a symbol in libsmashhit.so, regardless of the loader
+	 * type used.
+	 */
+	
+#ifdef USE_LEAF
+	return LeafSymbolAddr(gLeaf, name);
+#else
+	return dlsym(gLibsmashhitHandle, name);
+#endif
+}
+
 int invert_branch(void *addr) {
 	/**
 	 * Invert the branch at the given address.

@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <sys/mman.h>
+#include "andrleaf.h"
 
 #define TAG "smashshim"
 
@@ -22,10 +23,13 @@ enum {
 
 #ifndef USE_LEAF
 extern void *gLibsmashhitHandle;
+#else
+extern Leaf *gLeaf;
 #endif
 
 int set_memory_protection(void *addr, size_t length, int protection);
 int unprotect_memory(void *addr, size_t length);
+void *KNGetSymbolAddr(const char *name);
 int invert_branch(void *addr);
 int replace_function(void *from, void *to);
 

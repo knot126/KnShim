@@ -20,7 +20,6 @@ enum {
     KN_TYPE_BYTES,
 };
 
-#ifndef USE_LEAF
 int knSymbolAddr(lua_State *script) {
     /**
      * addr = knSymbolAddr(symbolName)
@@ -35,11 +34,10 @@ int knSymbolAddr(lua_State *script) {
         return 1;
     }
 
-    size_t sym = (size_t) dlsym(gLibsmashhitHandle, lua_tostring(script, 1));
+    size_t sym = (size_t) KNGetSymbolAddr(lua_tostring(script, 1));
     lua_pushinteger(script, sym);
     return 1;
 }
-#endif
 
 int knPeek(lua_State *script) {
     /**

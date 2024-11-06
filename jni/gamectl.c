@@ -2,7 +2,6 @@
  * Game control (such as setting balls, streak, gamemode etc)
  */
 
-#ifndef USE_LEAF
 #include <dlfcn.h>
 
 #include "lua/lua.h"
@@ -13,7 +12,7 @@
 #include "smashhit.h"
 
 static inline Game *gamectl_get_game(void) {
-	Game **ppGame = dlsym(gLibsmashhitHandle, "gGame");
+	Game **ppGame = KNGetSymbolAddr("gGame");
 	return *ppGame;
 }
 
@@ -34,25 +33,25 @@ int knSetStreak(lua_State *script) {
 }
 
 int knLevelHitSomething(lua_State *script) {
-	void (*hitSomething)(Level*, int) = dlsym(gLibsmashhitHandle, "_ZN5Level12hitSomethingEi");
+	void (*hitSomething)(Level*, int) = KNGetSymbolAddr("_ZN5Level12hitSomethingEi");
 	hitSomething(gamectl_get_level(), lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelStreakAbort(lua_State *script) {
-	void (*streakAbort)(Level*, int) = dlsym(gLibsmashhitHandle, "_ZN5Level11streakAbortEi");
+	void (*streakAbort)(Level*, int) = KNGetSymbolAddr("_ZN5Level11streakAbortEi");
 	streakAbort(gamectl_get_level(), lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelStreakInc(lua_State *script) {
-	void (*streakInc)(Level*, int) = dlsym(gLibsmashhitHandle, "_ZN5Level9streakIncEi");
+	void (*streakInc)(Level*, int) = KNGetSymbolAddr("_ZN5Level9streakIncEi");
 	streakInc(gamectl_get_level(), lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelAddScore(lua_State *script) {
-	void (*addScore)(Level*, int, int) = dlsym(gLibsmashhitHandle, "_ZN5Level8addScoreEii");
+	void (*addScore)(Level*, int, int) = KNGetSymbolAddr("_ZN5Level8addScoreEii");
 	addScore(gamectl_get_level(), lua_tointeger(script, 1), lua_tointeger(script, 2));
 	return 0;
 }
@@ -68,7 +67,7 @@ int knLevelExplosion(lua_State *script) {
 	
 	float power = lua_tonumber(script, 4);
 	
-	void (*explosion)(Level*, QiVec3*, float) = dlsym(gLibsmashhitHandle, "_ZN5Level9explosionERK6QiVec3f");
+	void (*explosion)(Level*, QiVec3*, float) = KNGetSymbolAddr("_ZN5Level9explosionERK6QiVec3f");
 	explosion(level, &pos, power);
 	
 	return 0;
@@ -89,4 +88,3 @@ int knEnableGamectl(lua_State *script) {
 	
 	return 0;
 }
-#endif
