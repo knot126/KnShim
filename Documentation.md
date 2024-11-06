@@ -6,15 +6,19 @@
 
 ## Installation
 
+> **Note**
+> 
+> This only applies to the native loader variant of the shim, not the one that uses Leaf. If you use the leaf variant, then instead of step two, you will need to copy the files in `lib` to a folder named `assets/native`, then you will need to delete the folders in `lib` and place the folders from `libs` in the shim there.
+
 To start using the shim in your mod, you will either need to download prebuilt binaries or build it yourself using the Android NDK. We will assume you've downloaded the ZIP file for whatever the latest version is.
 
-First, you will need to patch `libsmashhit.so` for both architectures so that anti-tamper is removed. You can use Shatter's libsmashhit patching feature to do this.
+**Step 1.** You will need to patch `libsmashhit.so` for both architectures so that anti-tamper is removed. You can use Shatter's libsmashhit patching feature to do this.
 
-Second, we need to copy the library to the APK. Open the `lib` folder in your APK (the one where you should see subfolders with names like `arm64-v8a` and `armeabi-v7a`). Then, open the ZIP file to the folder that has the same structure as the `lib` folder (e.g. `arm64-v8a` and etc), and copy those folders into the `lib` folder, merging them.
+**Step 2.** Copy the library to the APK. Open the `lib` folder in your APK (the one where you should see subfolders with names like `arm64-v8a` and `armeabi-v7a`). Then, open the ZIP file to the folder that has the same structure as the `lib` folder (e.g. `arm64-v8a` and etc), and copy those folders into the `lib` folder, merging them.
 
 When you're done with this step, every subfolder in `lib` should have two files: `libshim.so` and `libsmashhit.so`.
 
-After this, we need to change it so that `libshim.so` is loaded *before* `libsmashhit.so`. Open your APK's `AndroidManifest.xml` in a text editor and look for this line:
+**Step 3.** You need to change it so that `libshim.so` is loaded *before* `libsmashhit.so`. Open your APK's `AndroidManifest.xml` in a text editor and look for this line:
 
 ```xml
 <meta-data android:name="android.app.lib_name" android:value="smashhit"/>
@@ -207,30 +211,6 @@ PeekPoke has some concept of typing so that you do not have to use bytes for eve
 Get the address of the symbol named by `symbolName`. This is useful for finding pointers to functions and global game data which can be used as a basis for reading and writing values in memory.
 
 Returns the address assocaited with the symbol as an integer.
-
-### `knUnprotect(addr, size)`
-
-> **Deprecated**
-> 
-> `knUnprotect` may fail to work on newer versions of Android. Please use `knSetMemoryProtection` as described below!
-
-Mark any pages containing the memory in the range [`addr`,`addr`+`size`) as Read-Write-Execute. This is needed to ensure that memory is writable, if you are patching code or data in the `.rodata` section.
-
-Returns `true` on success or `false` on failure.
-
-### `knSetMemoryProtection(address, size, protections)`
-
-Mark any pages containing the memory in the range [`addr`,`addr`+`size`) as having the given memory protections.
-
-The `protections` variable may be one of `KN_MEM_READ_WRITE`, `KN_MEM_READ_RUN` or `KN_MEM_READ_ONLY`:
-
-* `KN_MEM_READ_WRITE`, which allows reading or writing the data, but not running it as code.
-* `KN_MEM_READ_RUN` ("run" meaning "execute"), which allows reading the data or running it as code, but not writing to it.
-* `KN_MEM_READ_ONLY` which allows reading the data, but not writing to it or running it as code.
-
-You might notice this is more limited than `knUnprotect` and wonder why it's now recommended.
-
-Returns `true` on success or `false` on failure.
 
 ### `knPeek(addr, type, [size])`
 
