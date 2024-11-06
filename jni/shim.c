@@ -91,8 +91,15 @@ void KNInitLua(struct android_app *app, Leaf *leaf) {
 	gAndroidExternalDataPath = strdup(app->activity->externalDataPath);
 }
 
+#ifdef BUILD_CIPHER
+void KNCipherInit(struct android_app *app, Leaf *leaf);
+#endif
+
 ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitLua,
+#ifdef BUILD_CIPHER
+	KNCipherInit,
+#endif
 	NULL,
 };
 
@@ -214,11 +221,6 @@ void android_main(struct android_app *app) {
 		__android_log_print(ANDROID_LOG_INFO, TAG, "Failed to mprotect() memory!");
 		return;
 	}
-	
-#ifdef BUILD_CIPHER
-	void KNCipherInit(void *libsmashhit);
-	KNCipherInit(gLibsmashhitHandle);
-#endif
 	
 	__android_log_print(ANDROID_LOG_INFO, TAG, "Calling android_main at <0x%p> with app at <0x%p>", (void*)func, (void*)app);
 	

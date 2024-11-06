@@ -257,13 +257,13 @@ int knEnablePeekPoke(lua_State *script) {
     lua_register(script, "knInvertBranch", knInvertBranch);
     
     // Types
-    lua_pushinteger(script, KN_TYPE_ADDR); lua_setglobal(script, "KN_TYPE_ADDR");
-    lua_pushinteger(script, KN_TYPE_BOOL); lua_setglobal(script, "KN_TYPE_BOOL");
-    lua_pushinteger(script, KN_TYPE_SHORT); lua_setglobal(script, "KN_TYPE_SHORT");
-    lua_pushinteger(script, KN_TYPE_INT); lua_setglobal(script, "KN_TYPE_INT");
-    lua_pushinteger(script, KN_TYPE_FLOAT); lua_setglobal(script, "KN_TYPE_FLOAT");
-    lua_pushinteger(script, KN_TYPE_STRING); lua_setglobal(script, "KN_TYPE_STRING");
-    lua_pushinteger(script, KN_TYPE_BYTES); lua_setglobal(script, "KN_TYPE_BYTES");
+    knLuaPushEnum(script, KN_TYPE_ADDR);
+    knLuaPushEnum(script, KN_TYPE_BOOL);
+    knLuaPushEnum(script, KN_TYPE_SHORT);
+    knLuaPushEnum(script, KN_TYPE_INT);
+    knLuaPushEnum(script, KN_TYPE_FLOAT);
+    knLuaPushEnum(script, KN_TYPE_STRING);
+    knLuaPushEnum(script, KN_TYPE_BYTES);
     
     // Memory protections
     knLuaPushEnum(script, KN_MEM_READ_WRITE);

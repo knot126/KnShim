@@ -1,4 +1,7 @@
 #ifdef BUILD_CIPHER
+#ifndef USE_LEAF
+#error Cryptor can only be built when using Leaf
+#endif
 #include <stdio.h>
 #include <dlfcn.h>
 #include <stdlib.h>
@@ -67,26 +70,19 @@ size_t KNCipher_writeInternal(QiFileOutputStream *stream, char *buffer, size_t l
 	return 1;
 }
 
-void KNCipherInit(void *libsmashhit) {
+void KNCipherInit(struct android_app *app, Leaf *leaf) {
 	// TODO these names vary by arch
 #if defined(__ARM_ARCH_7A__)
-	void *readInternal = dlsym(libsmashhit, "_ZN17QiFileInputStream12readInternalEPcj");
-	void *writeInternal = dlsym(libsmashhit, "_ZN18QiFileOutputStream13writeInternalEPKcj");
+	void *readInternal = KNGetSymbolAddr("_ZN17QiFileInputStream12readInternalEPcj");
+	void *writeInternal = KNGetSymbolAddr("_ZN18QiFileOutputStream13writeInternalEPKcj");
 #elif defined(__aarch64__)
-	void *readInternal = dlsym(libsmashhit, "_ZN17QiFileInputStream12readInternalEPcm");
-	void *writeInternal = dlsym(libsmashhit, "_ZN18QiFileOutputStream13writeInternalEPKcm");
+	void *readInternal = KNGetSymbolAddr("_ZN17QiFileInputStream12readInternalEPcm");
+	void *writeInternal = KNGetSymbolAddr("_ZN18QiFileOutputStream13writeInternalEPKcm");
 #else
 #error Unsupported platform
 #endif
 	
-	// WARNING set_memory_protection with exec doesnt work on modern android even
-	// if its RX, why!?
-	set_memory_protection(readInternal, 16, KN_MEM_READ_WRITE);
 	replace_function(readInternal, &KNCipher_readInternal);
-	set_memory_protection(readInternal, 16, KN_MEM_READ_RUN);
-	
-	set_memory_protection(writeInternal, 16, KN_MEM_READ_WRITE);
 	replace_function(writeInternal, &KNCipher_writeInternal);
-	set_memory_protection(writeInternal, 16, KN_MEM_READ_RUN);
 }
 #endif
