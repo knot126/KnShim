@@ -16,19 +16,21 @@
 #define KN_ARCH_STRING "unknown"
 #endif
 
-enum {
-	KN_MEM_READ_WRITE = PROT_READ | PROT_WRITE,
-	KN_MEM_READ_RUN = PROT_READ | PROT_EXEC,
-	KN_MEM_READ_ONLY = PROT_READ,
-};
+typedef struct KNHookManager {
+	void *code;
+	size_t code_alloced;
+	size_t hook_count;
+	size_t bytes_per_longjump;
+} KNHookManager;
 
 typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
 
-int set_memory_protection(void *addr, size_t length, int protection);
-int unprotect_memory(void *addr, size_t length);
 void *KNGetSymbolAddr(const char *name);
 int invert_branch(void *addr);
 int replace_function(void *from, void *to);
+
+int KNHookManagerInit(KNHookManager *self);
+int KNHookManagerHookFunction(KNHookManager *self, void *func_to_hook, void *new_func, void **hooked_func_start);
 
 #define knLuaPushEnum(SCRIPT, ENUM_NAME) lua_pushinteger(SCRIPT, ENUM_NAME); lua_setglobal(SCRIPT, #ENUM_NAME);
 
