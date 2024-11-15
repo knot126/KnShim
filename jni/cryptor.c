@@ -1,7 +1,4 @@
 #ifdef BUILD_CIPHER
-#ifndef USE_LEAF
-#error Cryptor can only be built when using Leaf
-#endif
 #include <stdio.h>
 #include <dlfcn.h>
 #include <stdlib.h>

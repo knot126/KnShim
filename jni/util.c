@@ -7,11 +7,7 @@
 #include "andrleaf.h"
 #include "util.h"
 
-#ifndef USE_LEAF
-extern void *gLibsmashhitHandle;
-#else
 extern Leaf *gLeaf;
-#endif
 
 int unprotect_memory(void *addr, size_t length) {
 	size_t page_size = getpagesize();
@@ -59,11 +55,7 @@ void *KNGetSymbolAddr(const char *name) {
 	 * type used.
 	 */
 	
-#ifdef USE_LEAF
 	return LeafSymbolAddr(gLeaf, name);
-#else
-	return dlsym(gLibsmashhitHandle, name);
-#endif
 }
 
 int invert_branch(void *addr) {

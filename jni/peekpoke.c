@@ -143,53 +143,6 @@ int knPoke(lua_State *script) {
     return 1;
 }
 
-#ifndef USE_LEAF
-int knUnprotect(lua_State *script) {
-    /**
-     * success = knUnprotect(addr, len)
-     * 
-     * Mark any pages containing the bytes [addr,addr+len) as allowing read,
-     * write and execute.
-     */
-    
-    if (lua_gettop(script) < 2) {
-        lua_pushnil(script);
-        return 1;
-    }
-
-    size_t addr = lua_tointeger(script, 1);
-    size_t len = lua_tointeger(script, 2);
-
-    int result = unprotect_memory((void *) addr, len);
-
-    lua_pushboolean(script, !result);
-    return 1;
-}
-
-int knSetMemoryProtection(lua_State *script) {
-    /**
-     * success = knSetMemoryProtection(addr, len, prot)
-     * 
-     * Change any pages containing the bytes [addr,addr+len) to have the given
-     * virtual memory protection options.
-     */
-    
-    if (lua_gettop(script) < 3) {
-        return 0;
-    }
-    
-    size_t address = lua_tointeger(script, 1);
-    size_t length = lua_tointeger(script, 2);
-    int protections = lua_tointeger(script, 3);
-    
-    int result = set_memory_protection((void *) address, length, protections);
-    
-    lua_pushboolean(script, !result);
-    
-    return 1;
-}
-#endif
-
 int knSystemAbi(lua_State *script) {
     /**
      * abi = knSystemAbi()
@@ -249,10 +202,6 @@ int knEnablePeekPoke(lua_State *script) {
     lua_register(script, "knSymbolAddr", knSymbolAddr);
     lua_register(script, "knPeek", knPeek);
     lua_register(script, "knPoke", knPoke);
-#ifndef USE_LEAF
-    lua_register(script, "knUnprotect", knUnprotect);
-    lua_register(script, "knSetMemoryProtection", knSetMemoryProtection);
-#endif
     lua_register(script, "knSystemAbi", knSystemAbi);
     lua_register(script, "knInvertBranch", knInvertBranch);
     

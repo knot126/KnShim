@@ -13,8 +13,8 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include <dlfcn.h>
-extern void *gLibsmashhitHandle;
+#include "andrleaf.h"
+extern Leaf *gLeaf;
 
 static const luaL_Reg lualibs[] = {
 //   {"", luaopen_base},
@@ -35,12 +35,10 @@ LUALIB_API void luaL_openlibs (lua_State *L) {
     lua_pushstring(L, lib->name);
     lua_call(L, 1, 0);
   }
-#ifndef USE_LEAF
   // Fixes some weird stuff that happens when we use the libshim.so one
   // Mainly a crash somewhere down the call stack in lua_rawseti
-  lua_pushcfunction(L, (lua_CFunction) dlsym(gLibsmashhitHandle, "luaopen_table"));
+  lua_pushcfunction(L, (lua_CFunction) LeafSymbolAddr(gLeaf, "luaopen_table"));
   lua_pushstring(L, "table");
   lua_call(L, 1, 0);
-#endif
 }
 
