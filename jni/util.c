@@ -114,7 +114,7 @@ int invert_branch(void *addr) {
 
 // ARM Architecture Reference Manual for A-profile architecture F5.1.74
 // Using P==0 and W==0
-#define AARCH32_MAKE_LDR_LITERAL(U, Rt, imm12) ( (0b11100100 << 24) | ((U & 1) << 23) | (0b0011111 << 16) | ((Rt & 0xf) << 12) | (imm12 & 0xfff))
+#define AARCH32_MAKE_LDR_LITERAL(U, Rt, imm12) ( (0b11100100 << 24) | (((U) & 1) << 23) | (0b0011111 << 16) | (((Rt) & 0xf) << 12) | ((imm12) & 0xfff))
 // ARM Architecture Reference Manual for A-profile architecture F5.1.27
 #define AARCH32_MAKE_BX(Rm) ( (0b1110000100101111111111110001 << 4) | (Rm & 0xf) )
 
@@ -218,13 +218,17 @@ void KNRewriteBlock(uint32_t *code, size_t code_size, size_t *fixup_block, void 
 	 * 
 	 * @warning `addr_block` must be a location nearby `code` and must be at
 	 * least `(code_size/4) * sizeof(size_t)` bytes long
-	 * @warning Only works on ARM64 atm
-	 * @warning Only rewrites ADR and ADRP
+	 * @warning Only supports:
+	 *   ARM64: adr, adrp
+	 *   ARM32: ldr (literal)
 	 */
 	
 	// Do the rewriting
 	for (size_t i = 0; i < (code_size >> 2); i++) {
 		uint32_t ins = code[i];
+		
+		// The original PC value (or PC-8 for arm32 because Reasons)
+		const size_t orig_ip = (size_t)orig_code_addr + ((size_t)&code[0] - (size_t)&code[i]);
 		
 		// adr and adrp, C6.2.11 and C6.2.12
 		#if defined(__aarch64__)
@@ -264,6 +268,27 @@ void KNRewriteBlock(uint32_t *code, size_t code_size, size_t *fixup_block, void 
 			code[i] = AARCH64_MAKE_LDRX_LITERAL(Rd, (size_t)fixup_block - (size_t)&code[i]);
 			
 			// Inc fixups block, since we used it
+			fixup_block++;
+		}
+		#elif defined(__ARM_ARCH_7A__)
+		// ldr (literal)
+		if (((ins >> 16) & 0b111001011111) == 0b010000011111 && (ins >> 28) != 0b1111) {
+			uint32_t imm12 = ins & 0xfff;
+			uint32_t Rt = (ins >> 12) & 0xf;
+			bool add = (ins >> 23) & 1;
+			
+			// Calculate load address
+			size_t addr = orig_ip + 8;
+			(add) ? (addr += imm12) : (addr -= imm12);
+			
+			// Write the value that is wanted to load
+			fixup_block[0] = *(uint32_t *)addr;
+			
+			// Write the instruction to load it
+			// Note: the constant U=1 is a bit jank but should work alright
+			code[i] = AARCH32_MAKE_LDR_LITERAL(1, Rt, (size_t)fixup_block - (size_t)&code[i]);
+			
+			// inc fixup block
 			fixup_block++;
 		}
 		#endif
