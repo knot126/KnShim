@@ -32,6 +32,9 @@ int replace_function(void *from, void *to);
 int KNHookManagerInit(KNHookManager *self);
 int KNHookManagerHookFunction(KNHookManager *self, void *func_to_hook, void *new_func, void **hooked_func_start);
 
+void KNHookInit(void);
+void KNHookFunction(void *func, void *hook, void **orig);
+
 #define knLuaPushEnum(SCRIPT, ENUM_NAME) lua_pushinteger(SCRIPT, ENUM_NAME); lua_setglobal(SCRIPT, #ENUM_NAME);
 
 #endif // _SHIM_UTIL_H

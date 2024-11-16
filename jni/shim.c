@@ -88,11 +88,28 @@ void KNInitLua(struct android_app *app, Leaf *leaf) {
 	gAndroidExternalDataPath = strdup(app->activity->externalDataPath);
 }
 
+#include "smashhit.h"
+
+void (*OrigScriptLoad)(void *this, QiString *path);
+
+void ScriptLoadHook(void *this, QiString *path) {
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Loading script: %s", path->data ? path->data : path->cached);
+	
+	OrigScriptLoad(this, path);
+}
+
+void KNHookerTestInit(struct android_app *app, Leaf *leaf) {
+	void *script_load = KNGetSymbolAddr("_ZN6Script4loadERK8QiString");
+	
+	KNHookFunction(script_load, &ScriptLoadHook, (void **) &OrigScriptLoad);
+}
+
 #ifdef BUILD_CIPHER
 void KNCipherInit(struct android_app *app, Leaf *leaf);
 #endif
 
 ModuleInitFunc gModuleInitFuncs[] = {
+	(ModuleInitFunc) KNHookInit,
 	KNInitLua,
 #ifdef BUILD_CIPHER
 	KNCipherInit,

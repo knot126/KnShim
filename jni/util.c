@@ -297,19 +297,30 @@ int KNHookManagerHookFunction(KNHookManager *self, void *func_to_hook, void *new
 	 * few bytes of the code as this will not be compensated for. That's TODO!
 	 */
 	
+	// NOTE:
+	// The layout of hook is:
+	//  - 3/4 original instructions
+	//  - jump back to original functions (3/4 instr)
+	//  - 
+	
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Hook %p -> %p", func_to_hook, new_func);
+	
 	// Check that there is enough space
 	// This is: (hook count) * (2 * (bytes per longjump) + needed rewrite bytes)
-	if (self->hook_count * (4 * self->bytes_per_longjump) > self->code_alloced) {
+	if (self->hook_count * (2 * self->bytes_per_longjump + sizeof(size_t) * (self->bytes_per_longjump / 4)) > self->code_alloced) {
 		return -1;
 	}
 	
 	// Addr of next available stub for start of func/jump back
 	void *stub = self->code + (self->hook_count * 4 * self->bytes_per_longjump);
 	
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Will make stub at %p", stub);
+	
 	// Copy start of func to stub
 	memcpy(stub, func_to_hook, self->bytes_per_longjump);
 	
 	// Do any needed fixups for PC-relative instructions
+	__android_log_print(ANDROID_LOG_INFO, TAG, "(stub @ %p) + 0x%zx = %p", stub, 2 * self->bytes_per_longjump, stub + (2 * self->bytes_per_longjump));
 	KNRewriteBlock(stub, self->bytes_per_longjump, stub + (2 * self->bytes_per_longjump), func_to_hook);
 	
 	// Make our jump back to the original function, let's just hope it didnt
@@ -324,4 +335,18 @@ int KNHookManagerHookFunction(KNHookManager *self, void *func_to_hook, void *new
 	
 	// Return 0 for success (we hope)
 	return 0;
+}
+
+KNHookManager gHookMan;
+
+void KNHookInit(void) {
+	if (KNHookManagerInit(&gHookMan)) {
+		__android_log_print(ANDROID_LOG_ERROR, TAG, "Error initing hook manager!");
+	}
+}
+
+void KNHookFunction(void *func, void *hook, void **orig) {
+	if (KNHookManagerHookFunction(&gHookMan, func, hook, orig)) {
+		__android_log_print(ANDROID_LOG_ERROR, TAG, "Error hooking function!");
+	}
 }
