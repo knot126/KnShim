@@ -93,7 +93,7 @@ void KNInitLua(struct android_app *app, Leaf *leaf) {
 void (*OrigScriptLoad)(void *this, QiString *path);
 
 void ScriptLoadHook(void *this, QiString *path) {
-	__android_log_print(ANDROID_LOG_INFO, TAG, "Loading script: %s", path->data ? path->data : path->cached);
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Loading scrifpt: %s", path->data ? path->data : path->cached);
 	
 	OrigScriptLoad(this, path);
 }
@@ -110,6 +110,7 @@ void KNCipherInit(struct android_app *app, Leaf *leaf);
 
 ModuleInitFunc gModuleInitFuncs[] = {
 	(ModuleInitFunc) KNHookInit,
+	KNHookerTestInit,
 	KNInitLua,
 #ifdef BUILD_CIPHER
 	KNCipherInit,
