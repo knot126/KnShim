@@ -124,6 +124,22 @@ For example, to set a four-ball multiball plus halfway to a five-ball multiball:
 knSetStreak(35)
 ```
 
+### `knLevelHitSomething()`
+
+Causes the player to crash and loose 10 balls.
+
+### `knLevelStreakAbort()`
+
+Aborts the player's streak "properly", e.g. plays the sound in addition to dropping the streak.
+
+### `knLevelStreakInc()`
+
+Increments the player's streak "properly".
+
+### `knLevelAddScore(score)`
+
+Adds balls to the player "properly".
+
 ## System and Misc utilities
 
 ### `knGetShimVersion()`
