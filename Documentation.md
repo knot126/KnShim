@@ -60,6 +60,18 @@ Write a file with the given contents, which may contain embedded zeros. Returns 
 
 Read the contents of the given file. Returns a string with the contents on success, even if the file is empty, or nil on failure.
 
+### `knRenameFile(oldPath, newPath)`
+
+Renames the file at `oldPath` to `newPath`, moving the file if needed. Returns `true` on success and `false` on failure.
+
+### `knDeleteFile(path)`
+
+Deletes the file at the given path. Returns `true` on success and `false` on failure.
+
+### `knIsFile(path)`
+
+Check if the file at the given path exists and can be read. Returns `true` if so, or `false` if not.
+
 ### `knMakeDir(dirName)`
 
 Creates the directory at `dirName` using `mkdir(dirName, 0777)`. Returns `true` on success, `false` on failure. Note that if the directory already exists, this will return `false`.
@@ -168,7 +180,7 @@ Returns the MIME type of the response data for a finished request, as a string.
 
 Return a string describing the HTTP error, or nil if there is none. Note that even if there is an error this may return nil, for example due to a lower-level network error.
 
-### `knHttpError(request)`
+### `knHttpErrorCode(request)`
 
 Return an integer which is the HTTP status code of the response, or `0` if there is not one. This may be `0` even if there was some kind of error.
 
