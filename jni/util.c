@@ -330,14 +330,21 @@ int KNHookManagerHookFunction(KNHookManager *self, void *func_to_hook, void *new
 	
 	__android_log_print(ANDROID_LOG_INFO, TAG, "Hook %p -> %p", func_to_hook, new_func);
 	
+	// This is: (2 * (bytes per longjump) + needed rewrite bytes)
+	// since there is the replaced instructions, the longjump back to the
+	// original code, and then the rewrite scratch block which should have
+	// enough space to cotain addresses for all three instructions at the start
+	const size_t size_per_hook = (2 * self->bytes_per_longjump + sizeof(size_t) * (self->bytes_per_longjump / 4));
+	
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Size per hook = 0x%zx", size_per_hook);
+	
 	// Check that there is enough space
-	// This is: (hook count) * (2 * (bytes per longjump) + needed rewrite bytes)
-	if (self->hook_count * (2 * self->bytes_per_longjump + sizeof(size_t) * (self->bytes_per_longjump / 4)) > self->code_alloced) {
+	if (self->hook_count * size_per_hook > self->code_alloced) {
 		return -1;
 	}
 	
 	// Addr of next available stub for start of func/jump back
-	void *stub = self->code + (self->hook_count * 4 * self->bytes_per_longjump);
+	void *stub = self->code + (self->hook_count * size_per_hook);
 	
 	__android_log_print(ANDROID_LOG_INFO, TAG, "Will make stub at %p", stub);
 	
@@ -345,7 +352,8 @@ int KNHookManagerHookFunction(KNHookManager *self, void *func_to_hook, void *new
 	memcpy(stub, func_to_hook, self->bytes_per_longjump);
 	
 	// Do any needed fixups for PC-relative instructions
-	__android_log_print(ANDROID_LOG_INFO, TAG, "(stub @ %p) + 0x%zx = %p", stub, 2 * self->bytes_per_longjump, stub + (2 * self->bytes_per_longjump));
+	__android_log_print(ANDROID_LOG_INFO, TAG, "rewrite with scratch block at (stub @ %p) + 0x%zx = %p", stub, 2 * self->bytes_per_longjump, stub + (2 * self->bytes_per_longjump));
+	
 	KNRewriteBlock(stub, self->bytes_per_longjump, stub + (2 * self->bytes_per_longjump), func_to_hook);
 	
 	// Make our jump back to the original function, let's just hope it didnt
@@ -357,6 +365,9 @@ int KNHookManagerHookFunction(KNHookManager *self, void *func_to_hook, void *new
 	
 	// Set hooked_func_start to the new start of the function (i.e. the stub)
 	hooked_func_start[0] = stub;
+	
+	// Increment hook count
+	self->hook_count++;
 	
 	// Return 0 for success (we hope)
 	return 0;
