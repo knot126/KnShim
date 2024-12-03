@@ -214,10 +214,5 @@ int knEnablePeekPoke(lua_State *script) {
     knLuaPushEnum(script, KN_TYPE_STRING);
     knLuaPushEnum(script, KN_TYPE_BYTES);
     
-    // Memory protections
-    knLuaPushEnum(script, KN_MEM_READ_WRITE);
-    knLuaPushEnum(script, KN_MEM_READ_RUN);
-    knLuaPushEnum(script, KN_MEM_READ_ONLY);
-    
     return 0;
 }
