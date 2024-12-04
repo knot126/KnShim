@@ -36,5 +36,6 @@ void KNHookInit(void);
 void KNHookFunction(void *func, void *hook, void **orig);
 
 #define knLuaPushEnum(SCRIPT, ENUM_NAME) lua_pushinteger(SCRIPT, ENUM_NAME); lua_setglobal(SCRIPT, #ENUM_NAME);
+#define knReturnNil(SCRIPT) lua_pushnil(SCRIPT); return 1;
 
 #endif // _SHIM_UTIL_H

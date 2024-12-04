@@ -186,7 +186,7 @@ void android_main(struct android_app *app) {
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Found android_main() at %p", func);
+		__android_log_print(ANDROID_LOG_INFO, TAG, "Found android_main() at %p", func);
 	}
 	
 	func(app);

@@ -7,6 +7,8 @@
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
 
+#include "util.h"
+
 #define KHASHTABLE_IMPLEMENTATION
 #include "hashtable.h"
 
@@ -18,7 +20,7 @@ KH_Dict *knGetReg(void) {
 	 * Get the registry dict, create if it doesn't exist
 	 */
 	
-	if (gRegistry) {
+	if (!gRegistry) {
 		gRegistry = KH_CreateDict();
 	}
 	
@@ -30,14 +32,14 @@ KH_Dict *knGetReg(void) {
 
 int knRegSet(lua_State *script) {
 	if (lua_gettop(script) < 2) {
-		return 0;
+		knReturnNil(script);
 	}
 	
 	knToString(key, 1);
 	knToString(value, 2);
 	
 	if (!key || !value) {
-		return 0;
+		knReturnNil(script);
 	}
 	
 	lua_pushboolean(script, KH_DictSet(knGetReg(), knBufToBlob(key), knBufToBlob(value)));
@@ -46,19 +48,22 @@ int knRegSet(lua_State *script) {
 
 int knRegGet(lua_State *script) {
 	if (lua_gettop(script) < 1) {
-		return 0;
+		__android_log_print(ANDROID_LOG_INFO, TAG, "get: not enough args");
+		knReturnNil(script);
 	}
 	
 	knToString(key, 1);
 	
 	if (!key) {
-		return 0;
+		__android_log_print(ANDROID_LOG_INFO, TAG, "get: key is null");
+		knReturnNil(script);
 	}
 	
 	KH_Blob *value = KH_DictGet(knGetReg(), knBufToBlob(key));
 	
 	if (!value) {
-		return 0;
+		__android_log_print(ANDROID_LOG_INFO, TAG, "get: value is null");
+		knReturnNil(script);
 	}
 	
 	lua_pushlstring(script, (const char *)value->data, value->length);
@@ -67,13 +72,13 @@ int knRegGet(lua_State *script) {
 
 int knRegHas(lua_State *script) {
 	if (lua_gettop(script) < 1) {
-		return 0;
+		knReturnNil(script);
 	}
 	
 	knToString(key, 1);
 	
 	if (!key) {
-		return 0;
+		knReturnNil(script);
 	}
 	
 	lua_pushboolean(script, KH_DictHas(knGetReg(), knBufToBlob(key)));
