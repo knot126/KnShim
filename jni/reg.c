@@ -48,21 +48,18 @@ int knRegSet(lua_State *script) {
 
 int knRegGet(lua_State *script) {
 	if (lua_gettop(script) < 1) {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "get: not enough args");
 		knReturnNil(script);
 	}
 	
 	knToString(key, 1);
 	
 	if (!key) {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "get: key is null");
 		knReturnNil(script);
 	}
 	
 	KH_Blob *value = KH_DictGet(knGetReg(), knBufToBlob(key));
 	
 	if (!value) {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "get: value is null");
 		knReturnNil(script);
 	}
 	
@@ -107,7 +104,11 @@ int knRegCount(lua_State *script) {
 }
 
 int knRegKeys(lua_State *script) {
-	lua_newtable(script);
+	// TODO: Smash Hit absolutely HATES using the default table functions, and
+	// heap memory will corrupt shortly after trying to use them. Figure out
+	// what SH has changed about Lua such that it crashes unless we lookup the
+	// symbol, which is slower...
+	((void (*)(lua_State *, int, int)) KNGetSymbolAddr("lua_createtable"))(script, 0, 0);
 	
 	for (size_t i = 0; i < KH_DictLen(knGetReg()); i++) {
 		lua_pushinteger(script, i + 1);
@@ -115,7 +116,7 @@ int knRegKeys(lua_State *script) {
 		KH_Blob *blob = KH_DictKeyIter(knGetReg(), i);
 		
 		lua_pushlstring(script, (const char *) blob->data, blob->length);
-		lua_settable(script, 1);
+		((void (*)(lua_State *, int)) KNGetSymbolAddr("lua_settable"))(script, 1);
 	}
 	
 	return 1;

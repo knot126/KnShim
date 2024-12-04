@@ -96,9 +96,9 @@ Checks if the registry has a given key. Return `true` if there is a value assoca
 
 Removes a given key-value pair from the registry, when given its key.
 
-### `knRegCount()`
+### `knRegKeys()`
 
-Returns the number of items in the registry, only really exists for debugging reasons.
+Returns an array-like table containing all of the keys in the registry.
 
 ## Game Control
 
