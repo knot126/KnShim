@@ -32,6 +32,18 @@ int knSetStreak(lua_State *script) {
 	return 0;
 }
 
+int knGetBalls(lua_State *script) {
+	Game *game = gamectl_get_game();
+	lua_pushinteger(script, game->player->balls);
+	return 1;
+}
+
+int knGetStreak(lua_State *script) {
+	Game *game = gamectl_get_game();
+	lua_pushinteger(script, game->player->streak);
+	return 1;
+}
+
 int knLevelHitSomething(lua_State *script) {
 	void (*hitSomething)(Level*, int) = KNGetSymbolAddr("_ZN5Level12hitSomethingEi");
 	hitSomething(gamectl_get_level(), lua_tointeger(script, 1));
@@ -76,6 +88,8 @@ int knLevelExplosion(lua_State *script) {
 int knEnableGamectl(lua_State *script) {
 	lua_register(script, "knSetBalls", knSetBalls);
 	lua_register(script, "knSetStreak", knSetStreak);
+	lua_register(script, "knGetBalls", knSetBalls);
+	lua_register(script, "knGetStreak", knSetStreak);
 	
 	// Level methods
 	lua_register(script, "knLevelHitSomething", knLevelHitSomething);
