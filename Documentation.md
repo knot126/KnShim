@@ -124,6 +124,14 @@ For example, to set a four-ball multiball plus halfway to a five-ball multiball:
 knSetStreak(35)
 ```
 
+### `knGetBalls()`
+
+Gets the current number of balls. This is different from using mgGet(), since it is updated even if you use knSetBalls().
+
+### `knGetStreak()`
+
+Gets the current streak. This is different from using mgGet(), since it is updated even if you use knSetStreak().
+
 ### `knLevelHitSomething()`
 
 Causes the player to crash and loose 10 balls.

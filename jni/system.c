@@ -9,7 +9,7 @@ extern char *gAndroidInternalDataPath;
 extern char *gAndroidExternalDataPath;
 
 int knGetShimVersion(lua_State *script) {
-    lua_pushinteger(script, 8);
+    lua_pushinteger(script, 9);
     return 1;
 }
 
