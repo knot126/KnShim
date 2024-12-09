@@ -44,6 +44,31 @@ int knGetStreak(lua_State *script) {
 	return 1;
 }
 
+uint32_t gNoclipBufferedInstruction = KN_RET;
+
+#define NOCLIP_IS_ON (gNoclipBufferedInstruction != KN_RET)
+
+void swap_noclip_state(void) {
+	uint32_t *hitSomething = KNGetSymbolAddr("_ZN5Level12hitSomethingEi");
+	uint32_t currentInstr = hitSomething[0];
+	hitSomething[0] = gNoclipBufferedInstruction;
+	gNoclipBufferedInstruction = currentInstr;
+}
+
+int knSetNoclip(lua_State *script) {
+	// Swap if states don't match
+	if ((NOCLIP_IS_ON) != lua_toboolean(script, 1)) {
+		swap_noclip_state();
+	}
+	
+	return 0;
+}
+
+int knGetNoclip(lua_State *script) {
+	lua_pushboolean(script, NOCLIP_IS_ON);
+	return 1;
+}
+
 int knLevelHitSomething(lua_State *script) {
 	void (*hitSomething)(Level*, int) = KNGetSymbolAddr("_ZN5Level12hitSomethingEi");
 	hitSomething(gamectl_get_level(), lua_tointeger(script, 1));
