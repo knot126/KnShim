@@ -132,6 +132,14 @@ Gets the current number of balls. This is different from using mgGet(), since it
 
 Gets the current streak. This is different from using mgGet(), since it is updated even if you use knSetStreak().
 
+### `knSetNoclip(mode)`
+
+If mode is `true`, then the noclip cheat is enabled if not already enabled. If mode is `false`, then noclip is disabled if not already disabled.
+
+### `knGetNoclip()`
+
+Return `true` if currently in noclip mode, or `false` otherwise.
+
 ### `knLevelHitSomething()`
 
 Causes the player to crash and loose 10 balls.

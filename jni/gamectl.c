@@ -115,6 +115,8 @@ int knEnableGamectl(lua_State *script) {
 	lua_register(script, "knSetStreak", knSetStreak);
 	lua_register(script, "knGetBalls", knSetBalls);
 	lua_register(script, "knGetStreak", knSetStreak);
+	lua_register(script, "knSetNoclip", knSetNoclip);
+	lua_register(script, "knGetNoclip", knGetNoclip);
 	
 	// Level methods
 	lua_register(script, "knLevelHitSomething", knLevelHitSomething);
