@@ -10,10 +10,10 @@
 
 #if defined(__ARM_ARCH_7A__)
 #define KN_ARCH_STRING "armeabi-v7a"
-#define KN_RET 0xd65f03c0
+#define KN_RET 0xe12fff1e
 #elif defined(__aarch64__)
 #define KN_ARCH_STRING "arm64-v8a"
-#define KN_RET 0xe12fff1e
+#define KN_RET 0xd65f03c0
 #else
 #define KN_ARCH_STRING "unknown"
 #endif

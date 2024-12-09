@@ -142,7 +142,7 @@ Return `true` if currently in noclip mode, or `false` otherwise.
 
 ### `knLevelHitSomething()`
 
-Causes the player to crash and loose 10 balls.
+Causes the player to crash and loose balls.
 
 ### `knLevelStreakAbort()`
 
