@@ -16,8 +16,7 @@ void custom_debug_log(void *this, char *message, int type) {
 void KNDebugLogInit(struct android_app *app, Leaf *leaf) {
 	void *log = KNGetSymbolAddr("_ZN5Debug3logEPKci");
 	
-	__android_log_print(ANDROID_LOG_INFO, TAG, "Will direct calls to Debug::log() at <%p> to <%p>", log, custom_debug_log);
-	
 	KNHookFunction(log, custom_debug_log, (void**) &gDebugLogFunc);
-	// KNHookFunction(log, &custom_debug_log, NULL);
+	
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Will direct calls to Debug::log() at <%p> to <%p> with orig stub at <%p>", log, custom_debug_log, gDebugLogFunc);
 }

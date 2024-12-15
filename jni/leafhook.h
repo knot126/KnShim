@@ -307,7 +307,7 @@ uint32_t *LHRewriteAArch32Block(LHHooker *self, uint32_t *old_block, size_t bloc
 			uint32_t result = LH_PC_VALUE_ALIGNED;
 			result += imm;
 			
-			LHStreamWrite32(&code, MAKE_AARCH32_LDR_LITERAL(1, 12, LH_INS_OFFSET));
+			LHStreamWrite32(&code, MAKE_AARCH32_LDR_LITERAL(1, Rd, LH_INS_OFFSET));
 			LHStreamWrite32(&data, result);
 		}
 		else if (IS_AARCH32_ADR_SUB(ins)) {
@@ -317,7 +317,7 @@ uint32_t *LHRewriteAArch32Block(LHHooker *self, uint32_t *old_block, size_t bloc
 			uint32_t result = LH_PC_VALUE_ALIGNED;
 			result -= imm;
 			
-			LHStreamWrite32(&code, MAKE_AARCH32_LDR_LITERAL(1, 12, LH_INS_OFFSET));
+			LHStreamWrite32(&code, MAKE_AARCH32_LDR_LITERAL(1, Rd, LH_INS_OFFSET));
 			LHStreamWrite32(&data, result);
 		}
 		else if (IS_AARCH32_LDR_LITERAL(ins)) {
@@ -325,17 +325,19 @@ uint32_t *LHRewriteAArch32Block(LHHooker *self, uint32_t *old_block, size_t bloc
 			uint32_t Rt = AARCH32_LDR_LITERAL_DECODE_RT(ins);
 			uint32_t imm = AARCH32_LDR_LITERAL_DECODE_IMM(ins);
 			
-			uint32_t word = LH_PC_VALUE_ALIGNED;
+			uint32_t addr = LH_PC_VALUE_ALIGNED;
 			
 			if (U) {
-				word += imm;
+				addr += imm;
 			}
 			else {
-				word -= imm;
+				addr -= imm;
 			}
 			
-			LHStreamWrite32(&code, MAKE_AARCH32_LDR_LITERAL(1, Rt, LH_INS_OFFSET));
-			LHStreamWrite32(&data, word);
+			uint32_t offset = LH_INS_OFFSET;
+			
+			LHStreamWrite32(&code, MAKE_AARCH32_LDR_LITERAL(1, Rt, offset));
+			LHStreamWrite32(&data, ((uint32_t *)addr)[0]);
 		}
 		else {
 			LHStreamWrite32(&code, ins);
