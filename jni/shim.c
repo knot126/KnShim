@@ -34,7 +34,7 @@ int knEnableFile(lua_State *script);
 int knEnableGamectl(lua_State *script);
 
 int load_lua_libs(lua_State *script) {
-	__android_log_print(ANDROID_LOG_INFO, TAG, "Hello from lua! Opening libs..");
+	// __android_log_print(ANDROID_LOG_INFO, TAG, "Hello from lua! Opening libs..");
 	
 	// Open default libs
 	luaL_openlibs(script);
@@ -88,29 +88,14 @@ void KNInitLua(struct android_app *app, Leaf *leaf) {
 	gAndroidExternalDataPath = strdup(app->activity->externalDataPath);
 }
 
-#include "smashhit.h"
-
-void (*OrigScriptLoad)(void *this, QiString *path);
-
-void ScriptLoadHook(void *this, QiString *path) {
-	__android_log_print(ANDROID_LOG_INFO, TAG, "Loading scrifpt: %s", path->data ? path->data : path->cached);
-	
-	OrigScriptLoad(this, path);
-}
-
-void KNHookerTestInit(struct android_app *app, Leaf *leaf) {
-	void *script_load = KNGetSymbolAddr("_ZN6Script4loadERK8QiString");
-	
-	KNHookFunction(script_load, &ScriptLoadHook, (void **) &OrigScriptLoad);
-}
-
 #ifdef BUILD_CIPHER
 void KNCipherInit(struct android_app *app, Leaf *leaf);
 #endif
 
+void KNDebugLogInit(struct android_app *app, Leaf *leaf);
+
 ModuleInitFunc gModuleInitFuncs[] = {
-	(ModuleInitFunc) KNHookInit,
-	KNHookerTestInit,
+	KNDebugLogInit,
 	KNInitLua,
 #ifdef BUILD_CIPHER
 	KNCipherInit,
