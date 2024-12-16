@@ -79,7 +79,7 @@ void KNCipherInit(struct android_app *app, Leaf *leaf) {
 #error Unsupported platform
 #endif
 	
-	replace_function(readInternal, &KNCipher_readInternal);
-	replace_function(writeInternal, &KNCipher_writeInternal);
+	KNHookFunction(readInternal, &KNCipher_readInternal, NULL);
+	KNHookFunction(writeInternal, &KNCipher_writeInternal, NULL);
 }
 #endif

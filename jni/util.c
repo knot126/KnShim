@@ -1,3 +1,4 @@
+#include <android_native_app_glue.h>
 #include <android/log.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -147,4 +148,26 @@ bool KNHookFunction(void *func, void *hook, void **orig) {
 	}
 	
 	return success;
+}
+
+bool KNLoadExt(const char *name, struct android_app *app, Leaf *leaf) {
+	/**
+	 * Loads a KnShim optional module (e.g. asset crypto) by its libname
+	 */
+	
+	void *module = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
+	
+	if (!module) {
+		return false;
+	}
+	
+	void (*init)(struct android_app *app, Leaf *leaf) = dlsym(module, "Init");
+	
+	if (!init) {
+		return false;
+	}
+	
+	init(app, leaf);
+	
+	return true;
 }

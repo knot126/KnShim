@@ -32,6 +32,7 @@ int invert_branch(void *addr);
 int replace_function(void *from, void *to);
 
 bool KNHookFunction(void *func, void *hook, void **orig);
+bool KNLoadExt(const char *name, struct android_app *app, Leaf *leaf);
 
 #define knLuaPushEnum(SCRIPT, ENUM_NAME) lua_pushinteger(SCRIPT, ENUM_NAME); lua_setglobal(SCRIPT, #ENUM_NAME);
 #define knReturnNil(SCRIPT) lua_pushnil(SCRIPT); return 1;
