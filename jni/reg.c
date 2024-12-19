@@ -304,6 +304,8 @@ int knDbDelete(lua_State *script) {
 	
 	KH_DictDelete(GetDB(), knBufToBlob(key));
 	
+	SaveDict(GetDB(), gDatabasePath);
+	
 	return 0;
 }
 
