@@ -217,6 +217,9 @@ static bool LoadDict(KH_Dict *dict, const char *path) {
 		void *val_data = ReadData(file, val_len);
 		
 		KH_DictSet(dict, KH_CreateBlob(key_data, key_len), KH_CreateBlob(val_data, val_len));
+		
+		free(key_data);
+		free(val_data);
 	}
 	
 	fclose(file);
