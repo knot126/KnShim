@@ -30,6 +30,7 @@ int knEnablePeekPoke(lua_State *script);
 int knEnableHttp(lua_State *script);
 int knEnableSystem(lua_State *script);
 int knEnableRegistry(lua_State *script);
+int knEnableDatabase(lua_State *script);
 int knEnableFile(lua_State *script);
 int knEnableGamectl(lua_State *script);
 
@@ -53,6 +54,9 @@ int load_lua_libs(lua_State *script) {
 	
 	// Registry
 	knEnableRegistry(script);
+	
+	// Database
+	knEnableDatabase(script);
 	
 	// Better file reading and writing
 	knEnableFile(script);
@@ -93,9 +97,11 @@ void KNCipherInit(struct android_app *app, Leaf *leaf);
 #endif
 
 void KNDebugLogInit(struct android_app *app, Leaf *leaf);
+void KNDatabaseInit(struct android_app *app, Leaf *leaf);
 
 ModuleInitFunc gModuleInitFuncs[] = {
 	KNDebugLogInit,
+	KNDatabaseInit,
 	KNInitLua,
 #ifdef BUILD_CIPHER
 	KNCipherInit,
