@@ -167,11 +167,11 @@ static void *ReadData(FILE *file, size_t size) {
 	return data;
 }
 
-static KH_Dict *SaveDict(KH_Dict *dict, const char *path) {
+static bool SaveDict(KH_Dict *dict, const char *path) {
 	FILE *file = fopen(path, "wb");
 	
 	if (!file) {
-		return NULL;
+		return false;
 	}
 	
 	WriteInt(file, KN_DATABASE_MAGIC);
@@ -192,7 +192,7 @@ static KH_Dict *SaveDict(KH_Dict *dict, const char *path) {
 	
 	fclose(file);
 	
-	return dict;
+	return true;
 }
 
 static bool LoadDict(KH_Dict *dict, const char *path) {
@@ -251,9 +251,13 @@ int knDbSet(lua_State *script) {
 		knReturnNil(script);
 	}
 	
-	lua_pushboolean(script, KH_DictSet(GetDB(), knBufToBlob(key), knBufToBlob(value)));
+	bool success = KH_DictSet(GetDB(), knBufToBlob(key), knBufToBlob(value));
 	
-	SaveDict(GetDB(), gDatabasePath);
+	if (success) {
+		success = SaveDict(GetDB(), gDatabasePath);
+	}
+	
+	lua_pushboolean(script, success);
 	
 	return 1;
 }
