@@ -5,11 +5,11 @@
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
 
-extern char *gAndroidInternalDataPath;
-extern char *gAndroidExternalDataPath;
+char *gAndroidInternalDataPath;
+char *gAndroidExternalDataPath;
 
 int knGetShimVersion(lua_State *script) {
-    lua_pushinteger(script, 10);
+    lua_pushinteger(script, 11);
     return 1;
 }
 
