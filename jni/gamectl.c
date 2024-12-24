@@ -110,6 +110,33 @@ int knLevelExplosion(lua_State *script) {
 	return 0;
 }
 
+#define MakeQiString(CSTR) { \
+		.data = CSTR, \
+		.allocated_size = strlen(CSTR), \
+		.length = strlen(CSTR), \
+	}
+
+int knConnectAssetServer(lua_State *script) {
+	bool (*connectAssetServer)(QiString *host, float timeout) = KNGetSymbolAddr("_ZN6ResMan18connectAssetServerERK8QiStringf");
+	
+	const char *host_cstr = lua_tostring(script, 1);
+	float timeout = lua_tonumber(script, 2);
+	
+	QiString host_qstr = MakeQiString(host_cstr);
+	
+	lua_pushboolean(script, connectAssetServer(&host_qstr, timeout));
+	
+	return 0;
+}
+
+int knDisconnectAssetServer(lua_State *script) {
+	void (*disconnectAssetServer)(void) = KNGetSymbolAddr("_ZN6ResMan21disconnectAssetServerEv");
+	
+	disconnectAssetServer();
+	
+	return 0;
+}
+
 int knEnableGamectl(lua_State *script) {
 	lua_register(script, "knSetBalls", knSetBalls);
 	lua_register(script, "knSetStreak", knSetStreak);
@@ -117,6 +144,8 @@ int knEnableGamectl(lua_State *script) {
 	lua_register(script, "knGetStreak", knGetStreak);
 	lua_register(script, "knSetNoclip", knSetNoclip);
 	lua_register(script, "knGetNoclip", knGetNoclip);
+	knRegisterFunc(script, knConnectAssetServer);
+	knRegisterFunc(script, knDisconnectAssetServer);
 	
 	// Level methods
 	lua_register(script, "knLevelHitSomething", knLevelHitSomething);
