@@ -41,7 +41,7 @@ Unfortunately, KnShim introduces a few bugs to *Smash Hit* due to the way it is 
 * On some devices, paticularly emulators, Smash Hit won't be able to open *at all*.
   * If you are using an emulator or an x86-based device, this probably means ARM emulation is borked rather than an issue with KnShim. Try using a different emulator.
   * If you are using a real, non-x86 device, then there is likely some other issue which needs to be fixed. Please report this issue in KnShim's GitHub repo.
-* The audio thread will sometimes cause the game to crash.
+* The audio thread will sometimes segfault and cause the game to crash.
 
 ## Logging
 
