@@ -1,6 +1,9 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+struct lua_State;
+typedef struct lua_State lua_State;
+
 typedef struct QiVec3 {
 	float x, y, z;
 } QiVec3;
@@ -11,6 +14,36 @@ typedef struct QiString {
 	int length;
 	char cached[32];
 } QiString;
+
+typedef struct QiScript {
+	void *_unknown0;
+	void *fixed_chunk_allocator;
+	lua_State* *state; // there is more this points to but idrc atm
+} QiScript;
+
+typedef struct Script {
+	QiScript *script;
+	// incomplete
+} Script;
+
+typedef struct ResMan {
+	// unknown contents
+} ResMan;
+
+typedef struct QiOutputStream {
+	// unknown contents
+} QiOutputStream;
+
+typedef struct QiInput {
+	// unknown contents
+} QiInput;
+
+typedef struct QiInput_Event {
+	int type;
+	int data;
+	int x;
+	int y;
+} QiInput_Event;
 
 #if defined(__ARM_ARCH_7A__)
 
