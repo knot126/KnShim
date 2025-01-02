@@ -292,6 +292,28 @@ int knReload(lua_State *script) {
 	return 0;
 }
 
+int knShitpost(lua_State *script) {
+	/**
+	 * result = knShitpost()
+	 * 
+	 * Return a funny string.
+	 */
+	
+	static const char *sShitposts[] = {
+		"Smash Hit Cdde Mode",
+		"Speedrun this Game!",
+		"<aitiktokvoice>99% of people cannot beat the first level in this ultra-challenging game. It's called Smash Hit and is free on Google PlayStore. Download now!</aitiktokvoice>",
+		"coffee stain more like shit stain",
+		"Miles 'Tails' Prower is god",
+		"SHN sucks, and that's a fact",
+		"KnShim (C) 2024 - 2025 Knot126",
+		"I really like the idea of the string 'Fur Affinity' being in KnShim, so here it is",
+	};
+	
+	lua_pushstring(script, sShitposts[rand() % (sizeof(sShitposts) / sizeof(sShitposts[0]))]);
+	return 1;
+}
+
 int knEnableGamectl(lua_State *script) {
 	// Cheats
 	lua_register(script, "knSetBalls", knSetBalls);
@@ -313,6 +335,9 @@ int knEnableGamectl(lua_State *script) {
 	// Menu reloading
 	knRegisterFunc(script, knEnableReloading);
 	knRegisterFunc(script, knReload);
+	
+	// Mule made me do this
+	knRegisterFunc(script, knShitpost);
 	
 	// Level methods
 	lua_register(script, "knLevelHitSomething", knLevelHitSomething);
