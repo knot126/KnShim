@@ -204,7 +204,7 @@ int knHttpPost(lua_State *script) {
 
 int knConnectAssetServer(lua_State *script) {
 	/**
-	 * (bool) success = knConnectAssetServer((string) address, (float) timeout)
+	 * (bool) success = knConnectAssetServer((string) host, (float) timeout)
 	 * 
 	 * Connect to an asset server, waiting up to `timeout` seconds for a
 	 * connection to be formed.

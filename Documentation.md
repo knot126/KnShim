@@ -110,7 +110,7 @@ Returns an array-like table containing all of the keys in the registry.
 
 ## Game Control
 
-The game control features allow you to control aspects of the gameplay.
+The game control features allow you to control aspects of the gameplay and use internal utility functions directly from Lua.
 
 ### `knSetBalls(balls)`
 
@@ -122,6 +122,10 @@ For example, to set the player's number of balls to 100:
 knSetBalls(100)
 ```
 
+### `knGetBalls()`
+
+Gets the current number of balls. This is different from using mgGet(), since it is updated even if you use knSetBalls().
+
 ### `knSetStreak(streak)`
 
 Set the player's streak.
@@ -131,10 +135,6 @@ For example, to set a four-ball multiball plus halfway to a five-ball multiball:
 ```lua
 knSetStreak(35)
 ```
-
-### `knGetBalls()`
-
-Gets the current number of balls. This is different from using mgGet(), since it is updated even if you use knSetBalls().
 
 ### `knGetStreak()`
 
@@ -164,6 +164,62 @@ Increments the player's streak "properly".
 
 Adds balls to the player "properly".
 
+### `knDownloadFile(url, path)`
+
+This is a Lua wrapper of `HttpThread::downloadFile()`. It downloads a file from an HTTP URL and saves it to the path. The path is a resource manager path, so user data paths should start with `user://`.
+
+Note that this function is blocking, so the game will freeze until the request completes.
+
+Returns true on success, or false on failure.
+
+#### Example
+
+```lua
+if knDownloadFile("http://myserver.com/mylevel.zip", "user://mylevel.zip") then
+    -- success
+else
+    -- failure
+end
+```
+
+### `knHttpPost(url, data)`
+
+This is a Lua wrapper of `ResMan::httpPost()`. It sends an HTTP POST request to the given URL with the given data. The HTTP `Content-Type` header will always be `application/octet-stream`.
+
+Note that this function is blocking, so the game will freeze until the request completes.
+
+Returns true on success, or false on failure.
+
+#### Example
+
+```lua
+if knHttpPost("http://myserver.com/highscore/", "score=12345") then
+    -- success
+else
+    -- failure
+end
+```
+
+### `knConnectAssetServer(host, timeout)`
+
+Connects to the Smash Hit asset server at `host`, waiting up to `timeout` seconds to make a connection. Returns `true` on success, or `false` on failure.
+
+### `knDisconnectAssetServer()`
+
+Disconnect from the current asset server.
+
+### `knIsConnectedToAssetServer()`
+
+Returns `true` if an asset server is currently connected, for `false` if one is not.
+
+### `knEnableReloading()`
+
+Install the hooks required to use `knReload()`. This only needs to be called once per game launch.
+
+### `knReload()`
+
+Requests a reload of the main menu on the next frame.
+
 ## System and Misc utilities
 
 ### `knGetShimVersion()`
@@ -181,6 +237,8 @@ Return the absolute path to the external data directory. This isn't used for any
 ## HTTP
 
 The HTTP extension allows making non-blocking HTTP requests.
+
+Note that if you don't need non-blocking requests, you can use the much simpler `knDownloadFile` and `knHttpPost` functions instead.
 
 **Note:** Due to the limited HTTP library being used, this does not support custom request headers or reading response headers and may have unexpected behaviour when network errors occur.
 
