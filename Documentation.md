@@ -134,7 +134,9 @@ Delete the key-value pair identified by the given key from the database, and sav
 
 The game control features allow you to control aspects of the gameplay and use internal utility functions directly from Lua.
 
-### `knSetBalls(balls)`
+### Cheats
+
+#### `knSetBalls(balls)`
 
 Set the player's number of balls to `balls`.
 
@@ -144,11 +146,11 @@ For example, to set the player's number of balls to 100:
 knSetBalls(100)
 ```
 
-### `knGetBalls()`
+#### `knGetBalls()`
 
 Gets the current number of balls. This is different from using mgGet(), since it is updated even if you use knSetBalls().
 
-### `knSetStreak(streak)`
+#### `knSetStreak(streak)`
 
 Set the player's streak.
 
@@ -158,35 +160,39 @@ For example, to set a four-ball multiball plus halfway to a five-ball multiball:
 knSetStreak(35)
 ```
 
-### `knGetStreak()`
+#### `knGetStreak()`
 
 Gets the current streak. This is different from using mgGet(), since it is updated even if you use knSetStreak().
 
-### `knSetNoclip(mode)`
+#### `knSetNoclip(mode)`
 
 If mode is `true`, then the noclip cheat is enabled if not already enabled. If mode is `false`, then noclip is disabled if not already disabled.
 
-### `knGetNoclip()`
+#### `knGetNoclip()`
 
 Return `true` if currently in noclip mode, or `false` otherwise.
 
-### `knLevelHitSomething()`
+### Level
+
+#### `knLevelHitSomething()`
 
 Causes the player to crash and loose balls.
 
-### `knLevelStreakAbort()`
+#### `knLevelStreakAbort()`
 
 Aborts the player's streak "properly", e.g. plays the sound in addition to dropping the streak.
 
-### `knLevelStreakInc()`
+#### `knLevelStreakInc()`
 
 Increments the player's streak "properly".
 
-### `knLevelAddScore(score)`
+#### `knLevelAddScore(score)`
 
 Adds balls to the player "properly".
 
-### `knDownloadFile(url, path)`
+### Internal HTTP function wrappers
+
+#### `knDownloadFile(url, path)`
 
 This is a Lua wrapper of `HttpThread::downloadFile()`. It downloads a file from an HTTP URL and saves it at the path. The path is a resource manager path, i.e. user data paths should start with `user://`.
 
@@ -194,7 +200,7 @@ Note that this function is blocking, so the game will freeze until the request c
 
 Returns true on success, or false on failure.
 
-#### Example
+##### Example
 
 ```lua
 if knDownloadFile("http://myserver.com/mylevel.zip", "user://mylevel.zip") then
@@ -204,7 +210,7 @@ else
 end
 ```
 
-### `knHttpPost(url, data)`
+#### `knHttpPost(url, data)`
 
 This is a Lua wrapper of `ResMan::httpPost()`. It sends an HTTP POST request to the given URL with the given data. The HTTP `Content-Type` header will always be `application/octet-stream`.
 
@@ -212,7 +218,7 @@ Note that this function is blocking, so the game will freeze until the request c
 
 Returns true on success, or false on failure.
 
-#### Example
+##### Example
 
 ```lua
 if knHttpPost("http://myserver.com/highscore/", "score=12345") then
@@ -222,23 +228,27 @@ else
 end
 ```
 
-### `knConnectAssetServer(host, timeout)`
+### Asset server
+
+#### `knConnectAssetServer(host, timeout)`
 
 Connects to the Smash Hit asset server at `host`, waiting up to `timeout` seconds to make a connection. Returns `true` on success, or `false` on failure.
 
-### `knDisconnectAssetServer()`
+#### `knDisconnectAssetServer()`
 
 Disconnect from the current asset server.
 
-### `knIsConnectedToAssetServer()`
+#### `knIsConnectedToAssetServer()`
 
 Returns `true` if an asset server is currently connected, for `false` if one is not.
 
-### `knEnableReloading()`
+### Menu reloading
+
+#### `knEnableReloading()`
 
 Install the hooks required to use `knReload()`. This only needs to be called once per game launch.
 
-### `knReload()`
+#### `knReload()`
 
 If on the main menu, this reloads the main menu on the next frame. The main menu script will continue to run as normal until then.
 
