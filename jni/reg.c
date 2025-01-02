@@ -138,12 +138,14 @@ char *gDatabasePath;
 
 #define KN_DATABASE_MAGIC ('K' | ('N' << 8) | ('O' << 16) | ('T' << 24))
 
-static void WriteInt(FILE *file, uint32_t data) {
-	fwrite(&data, sizeof data, 1, file);
+static bool WriteInt(FILE *file, uint32_t data) {
+	// Return true on error
+	return fwrite(&data, sizeof data, 1, file) == 0;
 }
 
-static void WriteData(FILE *file, size_t size, const void *buffer) {
-	fwrite(buffer, 1, size, file);
+static bool WriteData(FILE *file, size_t size, const void *buffer) {
+	// Return true on error
+	return fwrite(buffer, size, 1, file) == 0;
 }
 
 static uint32_t ReadInt(FILE *file) {
@@ -168,31 +170,60 @@ static void *ReadData(FILE *file, size_t size) {
 }
 
 static bool SaveDict(KH_Dict *dict, const char *path) {
-	FILE *file = fopen(path, "wb");
+	// To make sure we don't overwrite a good albeit outdated version with a
+	// corrupt version, we first write to a new file, then rename over the old
+	// one if successful.
+	char *temp_path = malloc(strlen(path) + strlen(".new") + 1);
 	
-	if (!file) {
+	if (!temp_path) {
 		return false;
 	}
 	
-	WriteInt(file, KN_DATABASE_MAGIC);
-	size_t length = KH_DictLen(dict);
-	WriteInt(file, length);
+	strcpy(temp_path, path);
+	strcat(temp_path, ".new");
 	
+	// Open temp file for writing
+	FILE *file = fopen(temp_path, "wb");
+	
+	if (!file) {
+		free(temp_path);
+		return false;
+	}
+	
+	bool error = false;
+	
+	// Write header
+	error |= WriteInt(file, KN_DATABASE_MAGIC);
+	size_t length = KH_DictLen(dict);
+	error |= WriteInt(file, length);
+	
+	// Write keys and values
 	for (size_t i = 0; i < length; i++) {
 		// Key
 		KH_Blob *blob = KH_DictKeyIter(dict, i);
-		WriteInt(file, blob->length);
-		WriteData(file, blob->length, blob->data);
+		error |= WriteInt(file, blob->length);
+		error |= WriteData(file, blob->length, blob->data);
 		
 		// Value
 		blob = KH_DictValueIter(dict, i);
-		WriteInt(file, blob->length);
-		WriteData(file, blob->length, blob->data);
+		error |= WriteInt(file, blob->length);
+		error |= WriteData(file, blob->length, blob->data);
 	}
 	
+	// Close the file
 	fclose(file);
 	
-	return true;
+	// If no error occured, replace the database file with the new one. Otherwise,
+	// just leave things as they are.
+	if (!error) {
+		int success = rename(temp_path, path);
+		free(temp_path);
+		return success == 0;
+	}
+	else {
+		free(temp_path);
+		return false;
+	}
 }
 
 static bool LoadDict(KH_Dict *dict, const char *path) {
@@ -311,9 +342,9 @@ int knDbDelete(lua_State *script) {
 	
 	KH_DictDelete(GetDB(), knBufToBlob(key));
 	
-	SaveDict(GetDB(), gDatabasePath);
+	lua_pushboolean(script, SaveDict(GetDB(), gDatabasePath));
 	
-	return 0;
+	return 1;
 }
 
 int knEnableDatabase(lua_State *script) {

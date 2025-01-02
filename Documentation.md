@@ -116,19 +116,23 @@ The database saves all data to a file named `database.kn` in the user data folde
 
 ### `knDbSet(key, value)`
 
-Set the key to be assocaited with the given value, and save the database.
+Create a mapping from the `key` to the `value`, and save the database.
+
+Returns `true` if the mapping was created and the database was saved, or `false` if either the mapping was not created or the database was not saved successfully.
 
 ### `knDbGet(key)`
 
-Return the value assocaited with the given key.
+Return the value assocaited with the key.
 
 ### `knDbHas(key)`
 
-Return `true` if the given key is in the database, or `false` if it isn't.
+Return `true` if there is a mapping of the given key in the database, or `false` if there is not.
 
 ### `knDbDelete(key)`
 
-Delete the key-value pair identified by the given key from the database, and save the database.
+Delete the mapping assocaited with the key, and save the database.
+
+Returns `true` if the database was saved successfully, or `false` if it was not.
 
 ## Game Control
 
