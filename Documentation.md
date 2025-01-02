@@ -198,7 +198,7 @@ Adds balls to the player "properly".
 
 #### `knDownloadFile(url, path)`
 
-This is a Lua wrapper of `HttpThread::downloadFile()`. It downloads a file from an HTTP URL and saves it at the path. The path is a resource manager path, i.e. user data paths should start with `user://`.
+This is a Lua wrapper of `HttpThread::downloadFile()`. It downloads a file from an HTTP URL and saves it at the path. The path is a resource manager path, so prepending it with `knGetInternalDataPath()` is not needed.
 
 Note that this function is blocking, so the game will freeze until the request completes.
 
@@ -207,7 +207,7 @@ Returns true on success, or false on failure.
 ##### Example
 
 ```lua
-if knDownloadFile("http://myserver.com/mylevel.zip", "user://mylevel.zip") then
+if knDownloadFile("http://myserver.com/mylevel.zip", "mylevel.zip") then
     -- success
 else
     -- failure
