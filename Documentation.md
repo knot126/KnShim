@@ -108,6 +108,28 @@ Removes a given key-value pair from the registry, when given its key.
 
 Returns an array-like table containing all of the keys in the registry.
 
+## Database
+
+The database is essentially the same as the registry, except it is saved across restarts of the game and is suitible for things like save games.
+
+The database saves all data to a file named `database.kn` in the user data folder.
+
+### `knDbSet(key, value)`
+
+Set the key to be assocaited with the given value, and save the database.
+
+### `knDbGet(key)`
+
+Return the value assocaited with the given key.
+
+### `knDbHas(key)`
+
+Return `true` if the given key is in the database, or `false` if it isn't.
+
+### `knDbDelete(key)`
+
+Delete the key-value pair identified by the given key from the database, and save the database.
+
 ## Game Control
 
 The game control features allow you to control aspects of the gameplay and use internal utility functions directly from Lua.
@@ -166,7 +188,7 @@ Adds balls to the player "properly".
 
 ### `knDownloadFile(url, path)`
 
-This is a Lua wrapper of `HttpThread::downloadFile()`. It downloads a file from an HTTP URL and saves it to the path. The path is a resource manager path, so user data paths should start with `user://`.
+This is a Lua wrapper of `HttpThread::downloadFile()`. It downloads a file from an HTTP URL and saves it at the path. The path is a resource manager path, i.e. user data paths should start with `user://`.
 
 Note that this function is blocking, so the game will freeze until the request completes.
 
@@ -218,7 +240,9 @@ Install the hooks required to use `knReload()`. This only needs to be called onc
 
 ### `knReload()`
 
-Requests a reload of the main menu on the next frame.
+If on the main menu, this reloads the main menu on the next frame. The main menu script will continue to run as normal until then.
+
+If in a level, this is nearly equivlent to `mgCommand("level.restart")`.
 
 ## System and Misc utilities
 
