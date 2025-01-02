@@ -19,6 +19,9 @@ int knEnableRegistry(lua_State *script);
 int knEnableDatabase(lua_State *script);
 int knEnableFile(lua_State *script);
 int knEnableGamectl(lua_State *script);
+#ifdef HYPERSPACE
+int knEnableOverlay(lua_State *script);
+#endif
 
 extern char *gAndroidInternalDataPath;
 extern char *gAndroidExternalDataPath;
@@ -52,6 +55,11 @@ int load_lua_libs(lua_State *script) {
 	
 	// Game control
 	knEnableGamectl(script);
+	
+#ifdef HYPERSPACE
+	// ZIP Overlays
+	knEnableOverlay(script);
+#endif
 	
 	return 0;
 }

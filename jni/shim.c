@@ -23,6 +23,9 @@ void KNDatabaseInit(struct android_app *app, Leaf *leaf);
 #ifdef BUILD_CIPHER
 void KNCipherInit(struct android_app *app, Leaf *leaf);
 #endif
+#ifdef HYPERSPACE
+void KNOverlayInit(struct android_app *app, Leaf *leaf);
+#endif
 
 ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitLua,
@@ -30,6 +33,9 @@ ModuleInitFunc gModuleInitFuncs[] = {
 	KNDatabaseInit,
 #ifdef BUILD_CIPHER
 	KNCipherInit,
+#endif
+#ifdef HYPERSPACE
+	KNOverlayInit,
 #endif
 	NULL,
 };

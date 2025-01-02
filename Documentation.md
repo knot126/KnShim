@@ -330,6 +330,40 @@ function finishRequest()
 end
 ```
 
+## Overlays
+
+> **Warnings**
+> 
+> * Overlays are only meant for Hyperspace at the moment, and they aren't in a normal build of KnShim.
+> * Gzip-compressed assets (`.gz.mp3`) are not supported. The assets can still be compressed within the ZIP file itself.
+> * Files must not have the `.mp3` suffix inside the ZIP.
+
+Overlays allow you to load assets from a ZIP file as if it were the assets directory, loading assets from the mod's real assets directory if not found in the ZIP file.
+
+For example, if you mount a zip file `forest.zip` which has a level:
+
+```
+forest.zip
+    levels/
+        forest.xml
+    rooms/
+        forest.lua
+    segments/
+        forest.xml
+```
+
+then playing the level `forest` will load from the ZIP file.
+
+If a segment then depends on an obstacle like `scoretop`, but it is not in the ZIP file, then it is loaded from the mod's assets directory.
+
+### `knMountOverlay(path)`
+
+Mounts an overlay given the ZIP file path. Returns `false` on failure, or `true` on success.
+
+### `knUnmountOverlay()`
+
+Unmounts the currently mounted overlay. Returns `false` if an overlay wasn't mounted, or `true` if an overlay was mounted and has been unmounted.
+
 ## PeekPoke
 
 The PeekPoke functions provide a way to read and write raw memory. This is probably the most powerful module as it basically allows making any changes to the game at runtime.

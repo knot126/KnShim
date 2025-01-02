@@ -25,16 +25,17 @@ unsigned char (*ResMan_load)(ResMan *this, QiString *path, QiOutputStream *outpu
 void (*QiOutputStream_writeBuffer)(QiOutputStream *this, void *buffer, size_t length);
 void (*Game_loadTemplates)(Game *this);
 
-bool HSLoadFromOverlay(const char *path, void **buffer, size_t *length);
+bool KNLoadFromOverlay(const char *path, void **buffer, size_t *length);
 
-unsigned char HSResMan_load(ResMan *this, QiString *path, QiOutputStream *output) {
+unsigned char KNResMan_load(ResMan *this, QiString *path, QiOutputStream *output) {
 	const char *virt_path = path->data ? path->data : path->cached;
 	void *buffer;
 	size_t size;
 	
-	if (HSLoadFromOverlay(virt_path, &buffer, &size)) {
+	if (KNLoadFromOverlay(virt_path, &buffer, &size)) {
 		__android_log_print(ANDROID_LOG_INFO, TAG, "Overlay load %s", virt_path);
 		QiOutputStream_writeBuffer(output, buffer, size);
+		free(buffer);
 		return 1;
 	}
 	else {
@@ -43,7 +44,7 @@ unsigned char HSResMan_load(ResMan *this, QiString *path, QiOutputStream *output
 	}
 }
 
-void HSOverlayInit(struct android_app *app, Leaf *leaf) {
+void KNOverlayInit(struct android_app *app, Leaf *leaf) {
 	// TODO: 32bit
 	QiOutputStream_writeBuffer = KNGetSymbolAddr("_ZN14QiOutputStream11writeBufferEPKvm");
 	
@@ -51,10 +52,10 @@ void HSOverlayInit(struct android_app *app, Leaf *leaf) {
 	Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
 	
 	// Hook res man load
-	KNHookFunction(KNGetSymbolAddr("_ZN6ResMan4loadERK8QiStringR14QiOutputStream"), HSResMan_load, (void **) &ResMan_load);
+	KNHookFunction(KNGetSymbolAddr("_ZN6ResMan4loadERK8QiStringR14QiOutputStream"), KNResMan_load, (void **) &ResMan_load);
 }
 
-bool HSOverlayMount(const char *path) {
+bool KNOverlayMount(const char *path) {
 	/**
 	 * Attach an overlay zip so that any files in the zip will be loaded before
 	 * ones in the assets directory.
@@ -79,13 +80,15 @@ bool HSOverlayMount(const char *path) {
 	
 	// Init zip reader
 	if (!mz_zip_reader_init_file(gZip, path, 0)) {
+		free(gZip);
+		gZip = NULL;
 		return false;
 	}
 	
 	return true;
 }
 
-bool HSOverlayUnmount(void) {
+bool KNOverlayUnmount(void) {
 	/**
 	 * Un-attach an overlay
 	 */
@@ -101,7 +104,7 @@ bool HSOverlayUnmount(void) {
 	return true;
 }
 
-bool HSLoadFromOverlay(const char *path, void **buffer, size_t *length) {
+bool KNLoadFromOverlay(const char *path, void **buffer, size_t *length) {
 	/**
 	 * Load a file from the current overlay, if it exists.
 	 */
@@ -136,7 +139,7 @@ int knMountOverlay(lua_State *script) {
 		return 0;
 	}
 	
-	bool status = HSOverlayMount(path);
+	bool status = KNOverlayMount(path);
 	
 	lua_pushboolean(script, status);
 	
@@ -144,12 +147,12 @@ int knMountOverlay(lua_State *script) {
 }
 
 int knUnmountOverlay(lua_State *script) {
-	lua_pushboolean(script, HSOverlayUnmount());
+	lua_pushboolean(script, KNOverlayUnmount());
 	
 	return 1;
 }
 
-int HSEnableOverlay(lua_State *script) {
+int knEnableOverlay(lua_State *script) {
 	knRegisterFunc(script, knMountOverlay);
 	knRegisterFunc(script, knUnmountOverlay);
 	
