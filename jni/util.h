@@ -8,12 +8,18 @@
 
 #define TAG "smashshim"
 
-#if defined(__ARM_ARCH_7A__)
+#if defined(__arm__)
 #define KN_ARCH_STRING "armeabi-v7a"
 #define KN_RET 0xe12fff1e
+typedef uint32_t shortop_t;
 #elif defined(__aarch64__)
 #define KN_ARCH_STRING "arm64-v8a"
 #define KN_RET 0xd65f03c0
+typedef uint32_t shortop_t;
+#elif defined(__i386__)
+#define KN_ARCH_STRING "x86"
+#define KN_RET 0xc3
+typedef uint8_t shortop_t;
 #else
 #define KN_ARCH_STRING "unknown"
 #endif

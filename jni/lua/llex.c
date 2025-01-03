@@ -177,7 +177,7 @@ static void buffreplace (LexState *ls, char from, char to) {
 static void trydecpoint (LexState *ls, SemInfo *seminfo) {
   /* format error: try to update decimal point separator */
   // HACK KNOT: armv7 doesn't support this on android sdks less than 21
-#ifndef __ARM_ARCH_7A__
+#if !defined(__arm__) && !defined(__i386__)
   struct lconv *cv = localeconv();
 #else
   struct lconv *cv = NULL;

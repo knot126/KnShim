@@ -12,6 +12,10 @@
 #include <errno.h>
 #include <dlfcn.h>
 
+#if defined(__arm__) || defined(__i386__)
+#define LEAF_32BIT
+#endif
+
 #ifdef LEAF_32BIT
 #define LEAF_CURRENT_CLASS 1
 #define LeafEhdr Elf32_Ehdr
@@ -564,6 +568,7 @@ void LeafDoRela(Leaf *self, LeafRela *relocs, size_t reloc_count) {
 		
 		switch (LeafRelocType(rela->r_info)) {
 			// TODO other arches
+#ifdef __aarch64__
 			case R_AARCH64_RELATIVE: {
 				// I think this works (?) since all symbols are zero in my case.
 				void *result = self->blob + rela->r_addend;
@@ -576,6 +581,7 @@ void LeafDoRela(Leaf *self, LeafRela *relocs, size_t reloc_count) {
 				*((size_t *)where) = sym->st_value + rela->r_addend;
 				break;
 			}
+#endif
 			default: {
 				__android_log_print(ANDROID_LOG_INFO, "leaflib", "Unknown reloc type: offset=0x%zx sym=0x%zx type=0x%zx addend=0x%zx\n", rela->r_offset, LeafRelocSym(rela->r_info), LeafRelocType(rela->r_info), rela->r_addend);
 				break;
@@ -592,6 +598,7 @@ void LeafDoRel(Leaf *self, LeafRel *relocs, size_t reloc_count) {
 		
 		switch (LeafRelocType(rel->r_info)) {
 			// TODO other arches
+#ifdef __arm__
 			case R_ARM_RELATIVE: {
 				void *result = self->blob + *((size_t *) where);
 				*((void **)where) = result;
@@ -611,6 +618,30 @@ void LeafDoRel(Leaf *self, LeafRel *relocs, size_t reloc_count) {
 				*((size_t *) where) = sym->st_value;
 				break;
 			}
+#endif
+#ifdef __i386__
+			case R_386_COPY: {
+				break;
+			}
+			case R_386_RELATIVE: {
+				// B + A
+				void *result = self->blob + *((size_t *) where);
+				*((void **)where) = result;
+				break;
+			}
+			case R_386_GLOB_DAT: {
+				// S
+				LeafSym *sym = &self->symtab[LeafRelocSym(rel->r_info)];
+				*((size_t *)where) = sym->st_value;
+				break;
+			}
+			case R_386_JMP_SLOT: {
+				// S
+				LeafSym *sym = &self->symtab[LeafRelocSym(rel->r_info)];
+				*((size_t *)where) = sym->st_value;
+				break;
+			}
+#endif
 			default: {
 				__android_log_print(ANDROID_LOG_INFO, "leaflib", "Unknown reloc type: offset=0x%zx sym=0x%zx type=0x%zx\n", rel->r_offset, LeafRelocSym(rel->r_info), LeafRelocType(rel->r_info));
 				break;

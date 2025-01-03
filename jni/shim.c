@@ -4,10 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(__ARM_ARCH_7A__)
-#define LEAF_32BIT
-#endif
-
 #define LEAF_IMPLEMENTATION
 #include "andrleaf.h"
 Leaf *gLeaf;

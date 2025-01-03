@@ -153,18 +153,11 @@ int knSystemAbi(lua_State *script) {
 	 * 
 	 * * ARMv7 is "armeabi-v7a"
 	 * * ARMv8 is "arm64-v8a"
+	 * * x86 is "x86"
 	 * * Anything else returns "unknown"
 	 */
 	
-	const char *abi;
-#if defined(__ARM_ARCH_7A__)
-	abi = "armeabi-v7a";
-#elif defined(__aarch64__)
-	abi = "arm64-v8a";
-#else
-	abi = "unknown";
-#endif
-	lua_pushstring(script, abi);
+	lua_pushstring(script, KN_ARCH_STRING);
 	
 	return 1;
 }

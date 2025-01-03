@@ -66,13 +66,13 @@ int knGetStreak(lua_State *script) {
 	return 1;
 }
 
-uint32_t gNoclipBufferedInstruction = KN_RET;
+shortop_t gNoclipBufferedInstruction = KN_RET;
 
 #define NOCLIP_IS_ON (gNoclipBufferedInstruction != KN_RET)
 
 void swap_noclip_state(void) {
-	uint32_t *hitSomething = KNGetSymbolAddr("_ZN5Level12hitSomethingEi");
-	uint32_t currentInstr = hitSomething[0];
+	shortop_t *hitSomething = KNGetSymbolAddr("_ZN5Level12hitSomethingEi");
+	shortop_t currentInstr = hitSomething[0];
 	hitSomething[0] = gNoclipBufferedInstruction;
 	gNoclipBufferedInstruction = currentInstr;
 }

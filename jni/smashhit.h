@@ -45,7 +45,7 @@ typedef struct QiInput_Event {
 	int y;
 } QiInput_Event;
 
-#if defined(__ARM_ARCH_7A__)
+#if defined(__arm__) || defined(__i386__)
 
 typedef struct Player {
 	char _unknown0[0x7f4];
