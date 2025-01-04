@@ -9,6 +9,7 @@
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
 
+#include "smashhit.h"
 #include "util.h"
 
 int knEnableLog(lua_State *script);
@@ -19,13 +20,11 @@ int knEnableRegistry(lua_State *script);
 int knEnableDatabase(lua_State *script);
 int knEnableFile(lua_State *script);
 int knEnableGamectl(lua_State *script);
-#ifdef HYPERSPACE
-int knEnableOverlay(lua_State *script);
-#endif
 
 extern char *gAndroidInternalDataPath;
 extern char *gAndroidExternalDataPath;
 
+#ifndef HYPERSPACE
 int load_lua_libs(lua_State *script) {
 	// __android_log_print(ANDROID_LOG_INFO, TAG, "Hello from lua! Opening libs..");
 	
@@ -56,11 +55,6 @@ int load_lua_libs(lua_State *script) {
 	// Game control
 	knEnableGamectl(script);
 	
-#ifdef HYPERSPACE
-	// ZIP Overlays
-	knEnableOverlay(script);
-#endif
-	
 	return 0;
 }
 
@@ -88,3 +82,42 @@ void KNInitLua(struct android_app *app, Leaf *leaf) {
 	gAndroidInternalDataPath = strdup(app->activity->internalDataPath);
 	gAndroidExternalDataPath = strdup(app->activity->externalDataPath);
 }
+
+#else
+
+int knEnableOverlay(lua_State *script);
+
+void (*real_script_load_func)(Script *this, QiString *path);
+
+static void script_load_hook(Script *this, QiString *path) {
+	real_script_load_func(this, path);
+	
+	const char *path_string = path->data ? path->data : path->cached;
+	lua_State *script = *this->script->state;
+	
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Loading script %s...", path_string);
+	
+	if (!strcmp(path_string, "menu/main.lua")) {
+		__android_log_print(ANDROID_LOG_INFO, TAG, "Injecting functions into %s", path_string);
+		
+		luaL_openlibs(script);
+		knEnableLog(script);
+		knEnablePeekPoke(script);
+		knEnableHttp(script);
+		knEnableSystem(script);
+		knEnableRegistry(script);
+		knEnableDatabase(script);
+		knEnableFile(script);
+		knEnableGamectl(script);
+		knEnableOverlay(script);
+	}
+}
+
+void KNInitLua(struct android_app *app, Leaf *leaf) {
+	// Install the lua extensions, but only for menu and hud scripts
+	KNHookFunction(KNGetSymbolAddr("_ZN6Script4loadERK8QiString"), &script_load_hook, (void *) &real_script_load_func);
+	
+	// Set internal and external data paths
+	gAndroidInternalDataPath = strdup(app->activity->internalDataPath);
+}
+#endif

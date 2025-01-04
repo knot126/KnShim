@@ -14,7 +14,7 @@ Leaf *gLeaf;
 typedef void (*AndroidMainFunc)(struct android_app *app);
 
 void KNInitLua(struct android_app *app, Leaf *leaf);
-void KNDebugLogInit(struct android_app *app, Leaf *leaf);
+// void KNDebugLogInit(struct android_app *app, Leaf *leaf);
 void KNDatabaseInit(struct android_app *app, Leaf *leaf);
 #ifdef BUILD_CIPHER
 void KNCipherInit(struct android_app *app, Leaf *leaf);
@@ -25,7 +25,7 @@ void KNOverlayInit(struct android_app *app, Leaf *leaf);
 
 ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitLua,
-	KNDebugLogInit,
+	// KNDebugLogInit,
 	KNDatabaseInit,
 #ifdef BUILD_CIPHER
 	KNCipherInit,

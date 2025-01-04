@@ -21,6 +21,7 @@
 mz_zip_archive *gZip;
 
 // Functions
+Game *gGame;
 unsigned char (*ResMan_load)(ResMan *this, QiString *path, QiOutputStream *output);
 void (*QiOutputStream_writeBuffer)(QiOutputStream *this, void *buffer, size_t length);
 void (*Game_loadTemplates)(Game *this);
@@ -45,6 +46,9 @@ unsigned char KNResMan_load(ResMan *this, QiString *path, QiOutputStream *output
 }
 
 void KNOverlayInit(struct android_app *app, Leaf *leaf) {
+	// gGame
+	gGame = *(Game **) KNGetSymbolAddr("gGame");
+	
 	// TODO: 32bit
 	QiOutputStream_writeBuffer = KNGetSymbolAddr("_ZN14QiOutputStream11writeBufferEPKvm");
 	
@@ -104,7 +108,7 @@ bool KNOverlayUnmount(void) {
 	return true;
 }
 
-bool KNLoadFromOverlay(const char *path, void **buffer, size_t *length) {
+bool KNLoadFromOverlay_Raw(const char *path, void **buffer, size_t *length) {
 	/**
 	 * Load a file from the current overlay, if it exists.
 	 */
@@ -126,6 +130,21 @@ bool KNLoadFromOverlay(const char *path, void **buffer, size_t *length) {
 		*length = size;
 		return true;
 	}
+}
+
+bool KNLoadFromOverlay(const char *path, void **buffer, size_t *length) {
+	bool status = KNLoadFromOverlay_Raw(path, buffer, length);
+	
+	if (!status) {
+		// Try loading with the mp3 suffix
+		char path_mp3[strlen(path) + 5];
+		strcpy(path_mp3, path);
+		strcat(path_mp3, ".mp3");
+		
+		status = KNLoadFromOverlay_Raw(path_mp3, buffer, length);
+	}
+	
+	return status;
 }
 
 int knMountOverlay(lua_State *script) {
@@ -152,9 +171,16 @@ int knUnmountOverlay(lua_State *script) {
 	return 1;
 }
 
+int knLoadTemplates(lua_State *script) {
+	Game_loadTemplates(gGame);
+	
+	return 0;
+}
+
 int knEnableOverlay(lua_State *script) {
 	knRegisterFunc(script, knMountOverlay);
 	knRegisterFunc(script, knUnmountOverlay);
+	knRegisterFunc(script, knLoadTemplates);
 	
 	return 0;
 }
