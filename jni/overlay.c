@@ -21,10 +21,10 @@
 mz_zip_archive *gZip;
 
 // Functions
-Game *gGame;
 unsigned char (*ResMan_load)(ResMan *this, QiString *path, QiOutputStream *output);
 void (*QiOutputStream_writeBuffer)(QiOutputStream *this, void *buffer, size_t length);
 void (*Game_loadTemplates)(Game *this);
+void (*Player_zero)(Player *this);
 
 bool KNLoadFromOverlay(const char *path, void **buffer, size_t *length);
 
@@ -45,10 +45,16 @@ unsigned char KNResMan_load(ResMan *this, QiString *path, QiOutputStream *output
 	}
 }
 
+int zrBalls = 25;
+int zrStreak = 0;
+
+void KNPlayer_zero(Player *this) {
+	Player_zero(this);
+	this->balls = zrBalls;
+	this->streak = zrStreak;
+}
+
 void KNOverlayInit(struct android_app *app, Leaf *leaf) {
-	// gGame
-	gGame = *(Game **) KNGetSymbolAddr("gGame");
-	
 	// TODO: 32bit
 	QiOutputStream_writeBuffer = KNGetSymbolAddr("_ZN14QiOutputStream11writeBufferEPKvm");
 	
@@ -57,6 +63,9 @@ void KNOverlayInit(struct android_app *app, Leaf *leaf) {
 	
 	// Hook res man load
 	KNHookFunction(KNGetSymbolAddr("_ZN6ResMan4loadERK8QiStringR14QiOutputStream"), KNResMan_load, (void **) &ResMan_load);
+	
+	// Hook player zero
+	KNHookFunction(KNGetSymbolAddr("_ZN6Player4zeroEv"), KNPlayer_zero, (void **) &Player_zero);
 }
 
 bool KNOverlayMount(const char *path) {
@@ -171,8 +180,27 @@ int knUnmountOverlay(lua_State *script) {
 	return 1;
 }
 
+static inline Game *get_game(void) {
+	Game **ppGame = KNGetSymbolAddr("gGame");
+	return *ppGame;
+}
+
 int knLoadTemplates(lua_State *script) {
-	Game_loadTemplates(gGame);
+	Game *gGame = get_game();
+	
+	if (gGame) {
+		Game_loadTemplates(gGame);
+	}
+	else {
+		__android_log_print(ANDROID_LOG_WARN, TAG, "gGame is null");
+	}
+	
+	return 0;
+}
+
+int knSetPlayerZeroState(lua_State *script) {
+	zrBalls = lua_tointeger(script, 1);
+	zrStreak = lua_tointeger(script, 2);
 	
 	return 0;
 }
@@ -181,6 +209,7 @@ int knEnableOverlay(lua_State *script) {
 	knRegisterFunc(script, knMountOverlay);
 	knRegisterFunc(script, knUnmountOverlay);
 	knRegisterFunc(script, knLoadTemplates);
+	knRegisterFunc(script, knSetPlayerZeroState);
 	
 	return 0;
 }
