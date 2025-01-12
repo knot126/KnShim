@@ -55,8 +55,11 @@ void KNPlayer_zero(Player *this) {
 }
 
 void KNOverlayInit(struct android_app *app, Leaf *leaf) {
-	// TODO: 32bit
+	#ifdef __aarch64__
 	QiOutputStream_writeBuffer = KNGetSymbolAddr("_ZN14QiOutputStream11writeBufferEPKvm");
+	#elif defined(__arm__)
+	QiOutputStream_writeBuffer = KNGetSymbolAddr("_ZN14QiOutputStream11writeBufferEPKvj");
+	#endif
 	
 	// Needed for reloading templates
 	Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");

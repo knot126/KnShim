@@ -16,15 +16,21 @@ bool (*ResMan_load)(ResMan *resman, QiString *path, QiOutputStream *output);
 void (*QiOutputStream_writeBuffer)(QiOutputStream *this, void *buffer, size_t length);
 
 bool cstr_starts_with(const char *str, const char *prefix) {
-	return strncmp(prefix, str, strlen(prefix));
+	return !strncmp(prefix, str, strlen(prefix));
 }
+
+#define CC_STW(STRING) cstr_starts_with(cc_path, STRING)
 
 bool ResManLoadHook(ResMan *resman, QiString *path, QiOutputStream *output) {
 	// File path as C string
 	const char *cc_path = path->data ? path->data : path->cached;
 	
 	// Just let resman load these classes of asset
-	if (cstr_starts_with(cc_path, "user://") || cstr_starts_with(cc_path, "http://")) {
+#ifdef CIPHER_ENCRYPT_ALL
+	if (CC_STW("user://") || CC_STW("http://")) {
+#else
+	if (!CC_STW("levels/") && !CC_STW("rooms/") && !CC_STW("segments")) {
+#endif
 		return ResMan_load(resman, path, output);
 	}
 	
@@ -58,7 +64,11 @@ void KNCipherInit(struct android_app *app, Leaf *leaf) {
 	void *pResManLoad = KNGetSymbolAddr("_ZN6ResMan4loadERK8QiStringR14QiOutputStream");
 	KNHookFunction(pResManLoad, &ResManLoadHook, (void **) &ResMan_load);
 	
-	QiOutputStream_writeBuffer = KNGetSymbolAddr("_ZN14QiOutputStream11writeBufferEPKvm"); // TODO 32bit
+#ifdef __aarch64__
+	QiOutputStream_writeBuffer = KNGetSymbolAddr("_ZN14QiOutputStream11writeBufferEPKvm");
+#elif defined(__arm__)
+	QiOutputStream_writeBuffer = KNGetSymbolAddr("_ZN14QiOutputStream11writeBufferEPKvj");
+#endif
 	
 	gApp = app;
 }
