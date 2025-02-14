@@ -292,36 +292,14 @@ int knReload(lua_State *script) {
 	return 0;
 }
 
-int knShitpost(lua_State *script) {
-	/**
-	 * result = knShitpost()
-	 * 
-	 * Return a funny string.
-	 */
-	
-	static const char *sShitposts[] = {
-		"Smash Hit Cdde Mode",
-		"Speedrun this Game!",
-		"<aitiktokvoice>99% of people cannot beat the first level in this ultra-challenging game. It's called Smash Hit and is free on Google PlayStore. Download now!</aitiktokvoice>",
-		"coffee stain more like shit stain",
-		"Miles 'Tails' Prower is god",
-		"SHN sucks, and that's a fact",
-		"KnShim (C) 2024 - 2025 Knot126",
-		"I really like the idea of the string 'Fur Affinity' being in KnShim, so here it is",
-	};
-	
-	lua_pushstring(script, sShitposts[rand() % (sizeof(sShitposts) / sizeof(sShitposts[0]))]);
-	return 1;
-}
-
 int knEnableGamectl(lua_State *script) {
 	// Cheats
-	lua_register(script, "knSetBalls", knSetBalls);
-	lua_register(script, "knGetBalls", knGetBalls);
-	lua_register(script, "knSetStreak", knSetStreak);
-	lua_register(script, "knGetStreak", knGetStreak);
-	lua_register(script, "knSetNoclip", knSetNoclip);
-	lua_register(script, "knGetNoclip", knGetNoclip);
+	knRegisterFunc(script, knSetBalls);
+	knRegisterFunc(script, knGetBalls);
+	knRegisterFunc(script, knSetStreak);
+	knRegisterFunc(script, knGetStreak);
+	knRegisterFunc(script, knSetNoclip);
+	knRegisterFunc(script, knGetNoclip);
 	
 	// Wrappers of built-in HTTP functions
 	knRegisterFunc(script, knDownloadFile);
@@ -336,15 +314,12 @@ int knEnableGamectl(lua_State *script) {
 	knRegisterFunc(script, knEnableReloading);
 	knRegisterFunc(script, knReload);
 	
-	// Mule made me do this
-	knRegisterFunc(script, knShitpost);
-	
 	// Level methods
-	lua_register(script, "knLevelHitSomething", knLevelHitSomething);
-	lua_register(script, "knLevelStreakAbort", knLevelStreakAbort);
-	lua_register(script, "knLevelStreakInc", knLevelStreakInc);
-	lua_register(script, "knLevelAddScore", knLevelAddScore);
-	lua_register(script, "knLevelExplosion", knLevelExplosion);
+	knRegisterFunc(script, knLevelHitSomething);
+	knRegisterFunc(script, knLevelStreakAbort);
+	knRegisterFunc(script, knLevelStreakInc);
+	knRegisterFunc(script, knLevelAddScore);
+	knRegisterFunc(script, knLevelExplosion);
 	
 	// Game methods
 	

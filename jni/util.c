@@ -8,47 +8,9 @@
 #include "andrleaf.h"
 #include "util.h"
 
-extern Leaf *gLeaf;
+struct android_app *gApp;
 
-int unprotect_memory(void *addr, size_t length) {
-	size_t page_size = getpagesize();
-	size_t align_diff = (size_t)addr % page_size; 
-	addr -= align_diff;
-	length += align_diff;
-	
-	__android_log_print(ANDROID_LOG_INFO, TAG, "unprotecting 0x%zx bytes at <%p> (aligned to %zu)", length, addr, page_size);
-	
-	int result = mprotect(addr, length, PROT_READ | PROT_WRITE | PROT_EXEC);
-	
-	if (result) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "mprotect() failed: status %d: %d %s", result, errno, strerror(errno));
-	}
-	
-	return result;
-}
-
-int set_memory_protection(void *addr, size_t length, int protection) {
-	/**
-	 * Similar to unprotect_memory, but allows any protection status to be set.
-	 * This is mainly so we can respect the W^X limits that Android 11+ seem to
-	 * have.
-	 */
-	
-	size_t page_size = getpagesize();
-	size_t align_diff = (size_t)addr % page_size; 
-	addr -= align_diff;
-	length += align_diff;
-	
-	__android_log_print(ANDROID_LOG_INFO, TAG, "set prot 0x%x for 0x%zx bytes at <%p> (aligned to %zu)", protection, length, addr, page_size);
-	
-	int result = mprotect(addr, length, protection);
-	
-	if (result) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "mprotect() failed: status %d: %d %s", result, errno, strerror(errno));
-	}
-	
-	return result;
-}
+Leaf *gLeaf;
 
 void *KNGetSymbolAddr(const char *name) {
 	/**
@@ -150,24 +112,53 @@ bool KNHookFunction(void *func, void *hook, void **orig) {
 	return success;
 }
 
-bool KNLoadExt(const char *name, struct android_app *app, Leaf *leaf) {
+bool KNLoadAsset(const char *path, void **data, size_t *size) {
 	/**
-	 * Loads a KnShim optional module (e.g. asset crypto) by its libname
+	 * Load an asset, with a extra NUL byte at the end (not counted as part of
+	 * length). Return true on success or false on failure. Size pointer is
+	 * optional.
+	 * 
+	 * You will need to free() the pointer returned in data if successful.
 	 */
 	
-	void *module = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
+	AAssetManager *asset_manager = gApp->activity->assetManager;
+	AAsset *asset = AAssetManager_open(asset_manager, path, AASSET_MODE_BUFFER);
 	
-	if (!module) {
+	// Try again with .mp3 suffix
+	if (!asset) {
+		char path_mp3[strlen(path) + 5];
+		strcpy(path_mp3, path);
+		strcat(path_mp3, ".mp3");
+		asset = AAssetManager_open(asset_manager, path_mp3, AASSET_MODE_BUFFER);
+	}
+	
+	if (!asset) {
 		return false;
 	}
 	
-	void (*init)(struct android_app *app, Leaf *leaf) = dlsym(module, "Init");
+	size_t t_size = AAsset_getLength(asset);
+	void *t_data = AAsset_getBuffer(asset);
 	
-	if (!init) {
+	// Duplicate asset data with NUL at end
+	char *f_data = malloc(t_size + 1);
+	
+	if (!f_data) {
+		AAsset_close(asset);
 		return false;
 	}
 	
-	init(app, leaf);
+	// Copy android's data buffer to ours
+	memcpy(f_data, t_data, t_size);
+	
+	// Set NUL at end
+	f_data[t_size] = '\0';
+	
+	// Write our results
+	*data = f_data;
+	if (size) { *size = t_size; }
+	
+	// Clean up
+	AAsset_close(asset);
 	
 	return true;
 }

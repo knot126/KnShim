@@ -7,6 +7,9 @@ A small shim that loads before Smash Hit and adds some new functionality to the 
 Build using:
 
 ```
-cd jni
-/home/dragon/Android/Sdk/ndk/18.1.5063045/ndk-build
+ndk-build
 ```
+
+from the Android NDK.
+
+Any version of the NDK not horrendously oudated should be fine. I usually build using r18.

@@ -6,7 +6,6 @@
 
 #define LEAF_IMPLEMENTATION
 #include "andrleaf.h"
-Leaf *gLeaf;
 #undef LEAF_IMPLEMENTATION
 
 #include "util.h"
@@ -53,6 +52,9 @@ AAsset *load_libsmashhit(struct android_app *app, const void **data, size_t *len
 }
 
 void android_main(struct android_app *app) {
+	// Set gApp to android app structure
+	gApp = app;
+	
 	// Create an instance of Leaf for loading the main binary
 	gLeaf = LeafInit();
 	

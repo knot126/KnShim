@@ -24,12 +24,8 @@ typedef uint8_t shortop_t;
 #define KN_ARCH_STRING "unknown"
 #endif
 
-typedef struct KNHookManager {
-	void *code;
-	size_t code_alloced;
-	size_t hook_count;
-	size_t bytes_per_longjump;
-} KNHookManager;
+extern Leaf *gLeaf;
+extern struct android_app *gApp;
 
 typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
 
@@ -38,7 +34,8 @@ int invert_branch(void *addr);
 int replace_function(void *from, void *to);
 
 bool KNHookFunction(void *func, void *hook, void **orig);
-bool KNLoadExt(const char *name, struct android_app *app, Leaf *leaf);
+
+bool KNLoadAsset(const char *path, void **data, size_t *size);
 
 #define knRegisterFunc(SCRIPT, NAME) lua_register(SCRIPT, #NAME, NAME)
 #define knLuaPushEnum(SCRIPT, ENUM_NAME) lua_pushinteger(SCRIPT, ENUM_NAME); lua_setglobal(SCRIPT, #ENUM_NAME);

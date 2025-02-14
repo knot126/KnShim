@@ -4,36 +4,6 @@
 > 
 > This documentation is, and always will be, incomplete.
 
-## Installation
-
-> **Note**
-> 
-> This only applies to the native loader variant of the shim, not the one that uses Leaf. If you use the leaf variant, then instead of step two, you will need to copy the files in `lib` to a folder named `assets/native`, then you will need to delete the folders in `lib` and place the folders from `libs` in the shim there.
-
-To start using the shim in your mod, you will either need to download prebuilt binaries or build it yourself using the Android NDK. We will assume you've downloaded the ZIP file for whatever the latest version is.
-
-**Step 1.** You will need to patch `libsmashhit.so` for both architectures so that anti-tamper is removed. You can use Shatter's libsmashhit patching feature to do this.
-
-**Step 2.** Copy the library to the APK. Open the `lib` folder in your APK (the one where you should see subfolders with names like `arm64-v8a` and `armeabi-v7a`). Then, open the ZIP file to the folder that has the same structure as the `lib` folder (e.g. `arm64-v8a` and etc), and copy those folders into the `lib` folder, merging them.
-
-When you're done with this step, every subfolder in `lib` should have two files: `libshim.so` and `libsmashhit.so`.
-
-**Step 3.** You need to change it so that `libshim.so` is loaded *before* `libsmashhit.so`. Open your APK's `AndroidManifest.xml` in a text editor and look for this line:
-
-```xml
-<meta-data android:name="android.app.lib_name" android:value="smashhit"/>
-```
-
-> **Hint**: it's probably line 11
-
-Now change `smashhit` to `shim`: 
-
-```xml
-<meta-data android:name="android.app.lib_name" android:value="shim"/>
-```
-
-... save it (and your APK), and you're done! You should now have access to all of the functions provided below in any Lua script.
-
 ## Known bugs
 
 Unfortunately, KnShim introduces a few bugs to *Smash Hit* due to the way it is loaded.
@@ -44,16 +14,18 @@ Unfortunately, KnShim introduces a few bugs to *Smash Hit* due to the way it is 
 
 ## Logging
 
-One new function is provided: `knLog(level, msg)`. It logs to the android debug stream, accessible with `adb logcat`. Level can be any one of:
+One new function is provided: `knLog([level], msg)`. It logs to the android debug stream, accessible with `adb logcat`. Level can be any one of:
 
 * `LOG_INFO`
 * `LOG_WARN`
 * `LOG_ERROR`
 
-And `msg` is any string to log. For example:
+Or not included at all for a default of `LOG_INFO`, and `msg` is any string to log. For example:
 
 ```lua
 knLog(LOG_INFO, "Hello, world!")
+knLog("What a wonderful day to mod Smash Hit!") -- defaults to LOG_INFO
+knLog(LOG_ERROR, "Whoops! Crashed.")
 ```
 
 ## Files
@@ -80,9 +52,23 @@ Deletes the file at the given path. Returns `true` on success and `false` on fai
 
 Check if the file at the given path exists and can be read. Returns `true` if so, or `false` if not.
 
-### `knMakeDir(dirName)`
+### `knMakeDir(path)`
 
-Creates the directory at `dirName` using `mkdir(dirName, 0777)`. Returns `true` on success, `false` on failure. Note that if the directory already exists, this will return `false`.
+Creates the directory at `path` using `mkdir(path, 0777)`. Returns `true` on success, `false` on failure. Note that if the directory already exists, this will return `false`.
+
+### `knListDir(path)`
+
+Return a list of file names in the directory as a table, not including the special entries `.` and `..`.
+
+### `knIsDir(path)`
+
+Check if the file system node at `path` is a directory and is readable. Return `true` if it is, and `false` if it is not.
+
+### `knLoadAsset(path)`
+
+Load the contents of an asset from the APK's assets directory. This does not use Smash Hit's asset manager, so some things will not work (e.g. trying to load an .gz.mp3 will not decompress it automatically), though for convience it will also try loading the path with a `.mp3` suffix if the initial path fails to load.
+
+Returns the contents of the asset as a string, or `nil` if the asset could not be loaded.
 
 ## Registry
 
@@ -271,6 +257,10 @@ Return the absolute path to the internal data directory (where the savegames and
 ### `knGetExternalDataPath()`
 
 Return the absolute path to the external data directory. This isn't used for anything in the game but is provided by Android so it's included for completeness.
+
+### `knInclude(path)`
+
+Similar to lua's `dofile()` but loads from the APK's asset directory.
 
 ## HTTP
 

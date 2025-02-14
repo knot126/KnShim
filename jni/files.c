@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 #include "lua/lua.h"
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
+
+#include "util.h"
 
 int knWriteFile(lua_State *script) {
 	/**
@@ -184,6 +187,12 @@ int knIsFile(lua_State *script) {
 }
 
 int knMakeDir(lua_State *script) {
+	/**
+	 * (bool) success = knMakeDir((string) path)
+	 * 
+	 * Create a directory.
+	 */
+	
 	if (lua_gettop(script) < 1) {
 		return 0;
 	}
@@ -202,13 +211,126 @@ int knMakeDir(lua_State *script) {
 	return 1;
 }
 
+int knListDir(lua_State *script) {
+	/**
+	 * (table|nil) entries = knListDir((string) path)
+	 */
+	
+	const char *dirname = lua_tostring(script, 1);
+	
+	if (!dirname) {
+		lua_pushnil(script);
+		return 1;
+	}
+	
+	DIR *dir = opendir(dirname);
+	
+	if (!dir) {
+		lua_pushnil(script);
+		return 1;
+	}
+	
+	void (*sh_lua_createtable)(lua_State *, int, int) = KNGetSymbolAddr("lua_createtable");
+	void (*sh_lua_settable)(lua_State *, int) = KNGetSymbolAddr("lua_settable");
+	
+	sh_lua_createtable(script, 0, 0);
+	
+	size_t i = 1;
+	struct dirent *ent;
+	
+	while ((ent = readdir(dir))) {
+		if (strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
+			lua_pushinteger(script, i++);
+			lua_pushstring(script, ent->d_name);
+			sh_lua_settable(script, 1);
+		}
+	}
+	
+	closedir(dir);
+	
+	return 1;
+}
+
+int knIsDir(lua_State *script) {
+	/**
+	 * (bool) is_dir = knIsDir((string) path)
+	 * 
+	 * Check if the node at the given path is a directory and can be read.
+	 */
+	
+	if (lua_gettop(script) < 1) {
+		return 0;
+	}
+	
+	const char *dirname = lua_tostring(script, 1);
+	
+	if (!dirname) {
+		lua_pushboolean(script, 0);
+		return 1;
+	}
+	
+	DIR *dir = opendir(dirname);
+	
+	if (dir) {
+		closedir(dir);
+		lua_pushboolean(script, 1);
+	}
+	else {
+		lua_pushboolean(script, 0);
+	}
+	
+	return 1;
+}
+
+int knLoadAsset(lua_State *script) {
+	/**
+	 * (string|nil) content = knLoadAsset((string) path)
+	 * 
+	 * Load the contents of an asset from the APK. For now, this doesn't use
+	 * Smash Hit's asset manager so things like auto-decompressing .gz.mp3 files
+	 * won't work, though for convience checking for the name with `.mp3`
+	 * appended is supported.
+	 * 
+	 * If loading succedes, a string containing the contents of the asset is
+	 * returned. If asset loading fails, it returns nil.
+	 */
+	
+	const char *path = lua_tostring(script, 1);
+	char *data = NULL;
+	size_t length = 0;
+	
+	if (!path) {
+		return luaL_error(script, "path is null or not a string");
+	}
+	
+	bool success = KNLoadAsset(path, (void **) &data, &length);
+	
+	if (success) {
+		lua_pushlstring(script, data, length);
+		free(data);
+	}
+	else {
+		lua_pushnil(script);
+	}
+	
+	return 1;
+}
+
 int knEnableFile(lua_State *script) {
-	lua_register(script, "knWriteFile", knWriteFile);
-	lua_register(script, "knReadFile", knReadFile);
-	lua_register(script, "knRenameFile", knRenameFile);
-	lua_register(script, "knDeleteFile", knDeleteFile);
-	lua_register(script, "knIsFile", knIsFile);
-	lua_register(script, "knMakeDir", knMakeDir);
+	// Files
+	knRegisterFunc(script, knWriteFile);
+	knRegisterFunc(script, knReadFile);
+	knRegisterFunc(script, knRenameFile);
+	knRegisterFunc(script, knDeleteFile);
+	knRegisterFunc(script, knIsFile);
+	
+	// Directories
+	knRegisterFunc(script, knMakeDir);
+	knRegisterFunc(script, knListDir);
+	knRegisterFunc(script, knIsDir);
+	
+	// Assets
+	knRegisterFunc(script, knLoadAsset);
 	
 	return 0;
 }

@@ -5,28 +5,64 @@
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
 
+#include "util.h"
+
 char *gAndroidInternalDataPath;
 char *gAndroidExternalDataPath;
 
 int knGetShimVersion(lua_State *script) {
-    lua_pushinteger(script, 11);
-    return 1;
+	lua_pushinteger(script, 11);
+	return 1;
 }
 
 int knGetInternalDataPath(lua_State *script) {
-    lua_pushstring(script, gAndroidInternalDataPath);
-    return 1;
+	lua_pushstring(script, gAndroidInternalDataPath);
+	return 1;
 }
 
 int knGetExternalDataPath(lua_State *script) {
-    lua_pushstring(script, gAndroidExternalDataPath);
-    return 1;
+	lua_pushstring(script, gAndroidExternalDataPath);
+	return 1;
+}
+
+int knInclude(lua_State *script) {
+	/**
+	 * Include a lua script from the APK assets directory.
+	 */
+	
+	const char *path = lua_tostring(script, 1);
+	char *data = NULL;
+	
+	if (!path) {
+		return luaL_error(script, "path is null or not a string");
+	}
+	
+	bool success = KNLoadAsset(path, &data, NULL);
+	
+	if (success) {
+		int lerror = luaL_dostring(script, data);
+		
+		free(data);
+		
+		// If there is an error present within dostring, it will have been
+		// pushed to the top of the stack, so just throw it after freeing our
+		// buffer.
+		if (lerror != 0) {
+			return lua_error(script);
+		}
+	}
+	else {
+		return luaL_error(script, "failed to load script asset %s", path);
+	}
+	
+	return 0;
 }
 
 int knEnableSystem(lua_State *script) {
-    lua_register(script, "knGetShimVersion", knGetShimVersion);
-    lua_register(script, "knGetInternalDataPath", knGetInternalDataPath);
-    lua_register(script, "knGetExternalDataPath", knGetExternalDataPath);
-    
-    return 0;
+	knRegisterFunc(script, knGetShimVersion);
+	knRegisterFunc(script, knGetInternalDataPath);
+	knRegisterFunc(script, knGetExternalDataPath);
+	knRegisterFunc(script, knInclude);
+	
+	return 0;
 }
