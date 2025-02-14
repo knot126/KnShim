@@ -15,9 +15,6 @@ typedef void (*AndroidMainFunc)(struct android_app *app);
 void KNInitLua(struct android_app *app, Leaf *leaf);
 // void KNDebugLogInit(struct android_app *app, Leaf *leaf);
 void KNDatabaseInit(struct android_app *app, Leaf *leaf);
-#ifdef BUILD_CIPHER
-void KNCipherInit(struct android_app *app, Leaf *leaf);
-#endif
 #ifdef HYPERSPACE
 void KNOverlayInit(struct android_app *app, Leaf *leaf);
 #endif
@@ -26,9 +23,6 @@ ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitLua,
 	// KNDebugLogInit,
 	KNDatabaseInit,
-#ifdef BUILD_CIPHER
-	KNCipherInit,
-#endif
 #ifdef HYPERSPACE
 	KNOverlayInit,
 #endif
