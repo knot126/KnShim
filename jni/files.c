@@ -242,7 +242,7 @@ int knListDir(lua_State *script) {
 		if (strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
 			lua_pushinteger(script, i++);
 			lua_pushstring(script, ent->d_name);
-			sh_lua_settable(script, 1);
+			sh_lua_settable(script, -3);
 		}
 	}
 	
