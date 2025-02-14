@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "andrleaf.h"
 #include "util.h"
@@ -159,6 +160,25 @@ bool KNLoadAsset(const char *path, void **data, size_t *size) {
 	
 	// Clean up
 	AAsset_close(asset);
+	
+	return true;
+}
+
+bool KNPreformInBackground(PthreadCallbackFunc func, void *arg) {
+	/**
+	 * Call func with argument as arg in a new background thread. It will be
+	 * detached immidately.
+	 */
+	
+	pthread_t thrd;
+	
+	int result = pthread_create(&thrd, NULL, func, arg);
+	
+	if (result) {
+		return false;
+	}
+	
+	pthread_detach(thrd);
 	
 	return true;
 }

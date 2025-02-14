@@ -269,13 +269,10 @@ If you have a pure lua library you would like to use with Smash Hit, you could d
 For example, let's say we want to use a JSON parser library with the file name `json.lua`. You could copy that to a file in your assets directory called `lualibs/json.lua.mp3`, then load it with:
 
 ```
-knInclude("lualibs/json.lua")
+local json = knInclude("lualibs/json.lua")
 ```
 
-Here are some libraries you might find interesting:
-
-  * [JSON parser](https://github.com/rxi/json.lua/blob/master/json.lua) (or [a different one](https://github.com/grafi-tt/lunajson)) which might be helpful when interacting with APIs.
-  * 
+If your library is multipule files, you might need to fix up the `require` calls to use `knInclude` and use `assets`-relative paths.
 
 ## HTTP
 
