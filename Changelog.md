@@ -4,3 +4,4 @@
 * `knLog` no longer requires log level
 * Code cleanup
 * Added `knListDir`, `knIsDir`, `knLoadAsset`, `knInclude`
+* Remove obfuscation related code
