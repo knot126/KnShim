@@ -262,6 +262,21 @@ Return the absolute path to the external data directory. This isn't used for any
 
 Similar to lua's `dofile()` but loads from the APK's asset directory.
 
+#### Using lua libraries
+
+If you have a pure lua library you would like to use with Smash Hit, you could download the file, put it in a folder where you keep lua libraries, then `knInclude()` it.
+
+For example, let's say we want to use a JSON parser library with the file name `json.lua`. You could copy that to a file in your assets directory called `lualibs/json.lua.mp3`, then load it with:
+
+```
+knInclude("lualibs/json.lua")
+```
+
+Here are some libraries you might find interesting:
+
+  * [JSON parser](https://github.com/rxi/json.lua/blob/master/json.lua) (or [a different one](https://github.com/grafi-tt/lunajson)) which might be helpful when interacting with APIs.
+  * 
+
 ## HTTP
 
 The HTTP extension allows making non-blocking HTTP requests.

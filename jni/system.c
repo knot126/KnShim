@@ -55,7 +55,7 @@ int knInclude(lua_State *script) {
 		return luaL_error(script, "failed to load script asset %s", path);
 	}
 	
-	return 0;
+	return lua_gettop(script) - 1;
 }
 
 int knEnableSystem(lua_State *script) {
