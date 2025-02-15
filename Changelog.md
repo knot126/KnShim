@@ -1,7 +1,8 @@
 # Release 12 (current development version)
 
-* In-testing x86 support
-* `knLog` no longer requires log level
+* Added `knListDir`, `knIsDir`, `knLoadAsset`, `knInclude`, `knHttpPostAsync`
+* `knLog` no longer requires log level, does not crash when `msg` is not a string
+* HTTP request objects will now be properly garbage collected, so `knHttpRelease` is not needed anymore
 * Code cleanup
-* Added `knListDir`, `knIsDir`, `knLoadAsset`, `knInclude`
 * Remove obfuscation related code
+* Untested x86 support

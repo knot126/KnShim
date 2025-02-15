@@ -383,6 +383,7 @@ int knEnableGamectl(lua_State *script) {
 	// Wrappers of built-in HTTP functions
 	knRegisterFunc(script, knDownloadFile);
 	knRegisterFunc(script, knHttpPost);
+	knRegisterFunc(script, knHttpPostAsync);
 	
 	// Asset server
 	knRegisterFunc(script, knConnectAssetServer);
