@@ -20,7 +20,7 @@ static inline Level *gamectl_get_level(void) {
 	return gamectl_get_game()->level;
 }
 
-#define MakeQiString(CSTR) { \
+#define MakeQiString(CSTR) (QiString) { \
 	.data = (char *) CSTR, \
 	.allocated_size = strlen(CSTR), \
 	.length = strlen(CSTR), \
@@ -200,6 +200,85 @@ int knHttpPost(lua_State *script) {
 	
 	lua_pushboolean(script, success);
 	return 1;
+}
+
+void *DupBuf(const void *buf, size_t size) {
+	void *nbuf = malloc(size);
+	
+	if (!nbuf) return NULL;
+	
+	return memcpy(nbuf, buf, size);
+}
+
+struct HttpPostAsyncInfo {
+	bool (*httpPost)(ResMan *this, QiString *url, const void *buffer, int size);
+	QiString qUrl;
+	char *buffer;
+	int size;
+};
+
+void *knHttpPostAsync_thread(struct HttpPostAsyncInfo *info) {
+	info->httpPost(NULL, &info->qUrl, info->buffer, info->size);
+	free(info->qUrl.data);
+	free(info->buffer);
+	free(info);
+	return NULL;
+}
+
+int knHttpPostAsync(lua_State *script) {
+	/**
+	 * (none) knHttpPostAsync((string) url, (string) data)
+	 * 
+	 * This is similar to knHttpPost, but does it in a new thread discarding the
+	 * return result. This means it might fail without any indication, but will
+	 * not block the main thread.
+	 */
+	
+	struct HttpPostAsyncInfo *info = malloc(sizeof *info);
+	
+	if (!info) {
+		return 0;
+	}
+	
+	const char *lua_url = lua_tostring(script, 1);
+	
+	if (!lua_url) {
+		free(info);
+		return 0;
+	}
+	
+	char *urlbuf = DupBuf(lua_url, strlen(lua_url) + 1);
+	
+	if (!urlbuf) {
+		free(info);
+		return 0;
+	}
+	
+	info->httpPost = KNGetSymbolAddr("_ZN6ResMan8httpPostERK8QiStringPKvi");
+	info->qUrl = MakeQiString(urlbuf);
+	
+	size_t size;
+	const char *buffer = lua_tolstring(script, 2, &size);
+	
+	if (!buffer) {
+		free(urlbuf);
+		free(info);
+		return 0;
+	}
+	
+	info->buffer = DupBuf(buffer, size);
+	
+	if (!info->buffer) {
+		free(urlbuf);
+		free(info);
+		return 0;
+	}
+	
+	info->size = size;
+	
+	KNPreformInBackground((PthreadCallbackFunc) knHttpPostAsync_thread, info);
+	
+	return 0;
 }
 
 int knConnectAssetServer(lua_State *script) {

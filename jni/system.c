@@ -37,7 +37,7 @@ int knInclude(lua_State *script) {
 		return luaL_error(script, "path is null or not a string");
 	}
 	
-	bool success = KNLoadAsset(path, &data, NULL);
+	bool success = KNLoadAsset(path, (void**)&data, NULL);
 	
 	if (success) {
 		int lerror = luaL_dostring(script, data);

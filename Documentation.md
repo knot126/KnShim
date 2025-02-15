@@ -268,7 +268,7 @@ If you have a pure lua library you would like to use with Smash Hit, you could d
 
 For example, let's say we want to use a JSON parser library with the file name `json.lua`. You could copy that to a file in your assets directory called `lualibs/json.lua.mp3`, then load it with:
 
-```
+```lua
 local json = knInclude("lualibs/json.lua")
 ```
 
@@ -276,11 +276,63 @@ If your library is multipule files, you might need to fix up the `require` calls
 
 ## HTTP
 
-The HTTP extension allows making non-blocking HTTP requests.
-
-Note that if you don't need non-blocking requests, you can use the much simpler `knDownloadFile` and `knHttpPost` functions instead.
+The HTTP extension allows more advanced HTTP requests, though it is still limited.
 
 **Note:** Due to the limited HTTP library being used, this does not support custom request headers or reading response headers and may have unexpected behaviour when network errors occur.
+
+The recommended way to use this library is to create two functions around your request: one to start it and another to process it. When you want to start an HTTP request you would call your custom `startRequest()` function, and you would call your custom `processRequest()` from a function that runs regularly like `drawWorld()`.
+
+### Example
+
+Here is an outline for submitting a high score to a server:
+
+```lua
+function handleCommand(cmd)
+    -- ...
+    
+    -- Start the request when the 'submitscore' command is run
+    if cmd == "submitscore" then
+        startHighScoreSubmission()
+    end
+    
+    -- ...
+end
+
+function startHighScoreSubmission()
+    highScoreRequest = knHttpRequest("http://myserver.com/highscore/", getHighScore())
+    
+    if not highScoreRequest then
+        -- handle failing to initialise the request
+    end
+end
+
+function processHighScoreSubmission()
+    if highScoreRequest then
+        -- update the request with recieved data and get the status
+        local status = knHttpUpdate(highScoreRequest)
+        
+        if status == KN_HTTP_PENDING then
+            -- we can't really do anything while pending, leave everything as is
+        else
+            if status == KN_HTTP_ERROR then
+                -- handle the error case, maybe show a dialogue to the user
+                -- about the error
+            else
+                local data = knHttpData(highScoreRequest)
+                -- handle the successful case with the response data, maybe
+                -- show something to confirm the score was submitted. note that
+                -- if your server returns something like 200 OK for certian
+                -- types of errors this will still technically be an error and
+                -- you will want to handle that accordingly
+            end
+            
+            -- Since the request is finished, don't hang on to the object
+            -- anymore and replace it with nil so we know it's no longer needed
+            highScoreRequest = nil
+        end
+    end
+end
+```
 
 ### `knHttpRequest(url, [data])`
 
@@ -290,7 +342,7 @@ Returns a value of type `userdata` (the request object) on success or `nil` on f
 
 Note: `data` is allowed to contain embedded zeros.
 
-### `knHttpRequest(request)`
+### `knHttpUpdate(request)`
 
 Reads any new data and further process the request, possibly finalising it. Returns:
 
@@ -335,6 +387,8 @@ function finishRequest()
     globalRequestObject = nil
 end
 ```
+
+**Note:** As of Shim r12, knHttpRelease() is now automatically called when request objects are garbage collected. knHttpRelease() can still be used to collect the bulk of their contents immediately, but is no longer required.
 
 ## Overlays
 
