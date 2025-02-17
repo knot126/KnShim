@@ -135,6 +135,7 @@ int knEnableRegistry(lua_State *script) {
 /** Database **/
 KH_Dict *gDatabase;
 char *gDatabasePath;
+bool gDbTransactionMode;
 
 #define KN_DATABASE_MAGIC ('K' | ('N' << 8) | ('O' << 16) | ('T' << 24))
 
@@ -271,6 +272,10 @@ static KH_Dict *GetDB(void) {
 }
 
 int knDbSet(lua_State *script) {
+	/**
+	 * Set an entry in the key-value database.
+	 */
+	
 	if (lua_gettop(script) < 2) {
 		knReturnNil(script);
 	}
@@ -284,7 +289,7 @@ int knDbSet(lua_State *script) {
 	
 	bool success = KH_DictSet(GetDB(), knBufToBlob(key), knBufToBlob(value));
 	
-	if (success) {
+	if (success && !gDbTransactionMode) {
 		success = SaveDict(GetDB(), gDatabasePath);
 	}
 	
@@ -294,6 +299,10 @@ int knDbSet(lua_State *script) {
 }
 
 int knDbGet(lua_State *script) {
+	/**
+	 * Get the value mapped from the key.
+	 */
+	
 	if (lua_gettop(script) < 1) {
 		knReturnNil(script);
 	}
@@ -315,6 +324,10 @@ int knDbGet(lua_State *script) {
 }
 
 int knDbHas(lua_State *script) {
+	/**
+	 * Check if the key is mapped to anything.
+	 */
+	
 	if (lua_gettop(script) < 1) {
 		knReturnNil(script);
 	}
@@ -330,6 +343,10 @@ int knDbHas(lua_State *script) {
 }
 
 int knDbDelete(lua_State *script) {
+	/**
+	 * Remove a mapping from the database.
+	 */
+	
 	if (lua_gettop(script) < 1) {
 		return 0;
 	}
@@ -342,8 +359,27 @@ int knDbDelete(lua_State *script) {
 	
 	KH_DictDelete(GetDB(), knBufToBlob(key));
 	
-	lua_pushboolean(script, SaveDict(GetDB(), gDatabasePath));
+	lua_pushboolean(script, gDbTransactionMode || SaveDict(GetDB(), gDatabasePath));
 	
+	return 1;
+}
+
+int knDbTrans(lua_State *script) {
+	/**
+	 * Disable writing a database file until the next commit.
+	 */
+	
+	gDbTransactionMode = true;
+	return 0;
+}
+
+int knDbCommit(lua_State *script) {
+	/**
+	 * Re-enable writing the database and write the database file.
+	 */
+	
+	gDbTransactionMode = false;
+	lua_pushboolean(script, SaveDict(GetDB(), gDatabasePath));
 	return 1;
 }
 

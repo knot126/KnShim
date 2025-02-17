@@ -1,4 +1,10 @@
-# Release 12 (current development version)
+# Changelog
+
+## Release 13
+
+* Removed `knEnableReloading`; you can now just `knReload()` without enabling it
+
+## Release 12
 
 * Added `knListDir`, `knIsDir`, `knLoadAsset`, `knInclude`, `knHttpPostAsync`
 * `knLog` no longer requires log level, does not crash when `msg` is not a string

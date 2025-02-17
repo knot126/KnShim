@@ -11,13 +11,13 @@
 #include "util.h"
 #include "smashhit.h"
 
-static inline Game *gamectl_get_game(void) {
+static inline Game *getGame(void) {
 	Game **ppGame = KNGetSymbolAddr("gGame");
 	return *ppGame;
 }
 
-static inline Level *gamectl_get_level(void) {
-	return gamectl_get_game()->level;
+static inline Level *getLevel(void) {
+	return getGame()->level;
 }
 
 #define MakeQiString(CSTR) (QiString) { \
@@ -26,23 +26,16 @@ static inline Level *gamectl_get_level(void) {
 	.length = strlen(CSTR), \
 }
 
+/**
+ * RAW GET/SET BALLS
+ */
 int knSetBalls(lua_State *script) {
 	/**
 	 * Set the player's ball count
 	 */
 	
-	Game *game = gamectl_get_game();
+	Game *game = getGame();
 	game->player->balls = lua_tointeger(script, 1);
-	return 0;
-}
-
-int knSetStreak(lua_State *script) {
-	/**
-	 * Set the player's streak
-	 */
-	
-	Game *game = gamectl_get_game();
-	game->player->streak = lua_tointeger(script, 1);
 	return 0;
 }
 
@@ -51,9 +44,19 @@ int knGetBalls(lua_State *script) {
 	 * Get the player's ballcount. This is accurate even if knSetBalls was used.
 	 */
 	
-	Game *game = gamectl_get_game();
+	Game *game = getGame();
 	lua_pushinteger(script, game->player->balls);
 	return 1;
+}
+
+int knSetStreak(lua_State *script) {
+	/**
+	 * Set the player's streak
+	 */
+	
+	Game *game = getGame();
+	game->player->streak = lua_tointeger(script, 1);
+	return 0;
 }
 
 int knGetStreak(lua_State *script) {
@@ -61,11 +64,14 @@ int knGetStreak(lua_State *script) {
 	 * Get the player's streak. This is accurate even if knSetStreak was used.
 	 */
 	
-	Game *game = gamectl_get_game();
+	Game *game = getGame();
 	lua_pushinteger(script, game->player->streak);
 	return 1;
 }
 
+/**
+ * NO CLIP
+ */
 shortop_t gNoclipBufferedInstruction = KN_RET;
 
 #define NOCLIP_IS_ON (gNoclipBufferedInstruction != KN_RET)
@@ -99,32 +105,35 @@ int knGetNoclip(lua_State *script) {
 	return 1;
 }
 
+/**
+ * LEVEL FUNCTION HELPERS
+ */
 int knLevelHitSomething(lua_State *script) {
 	void (*hitSomething)(Level*, int) = KNGetSymbolAddr("_ZN5Level12hitSomethingEi");
-	hitSomething(gamectl_get_level(), lua_tointeger(script, 1));
+	hitSomething(getLevel(), lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelStreakAbort(lua_State *script) {
 	void (*streakAbort)(Level*, int) = KNGetSymbolAddr("_ZN5Level11streakAbortEi");
-	streakAbort(gamectl_get_level(), lua_tointeger(script, 1));
+	streakAbort(getLevel(), lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelStreakInc(lua_State *script) {
 	void (*streakInc)(Level*, int) = KNGetSymbolAddr("_ZN5Level9streakIncEi");
-	streakInc(gamectl_get_level(), lua_tointeger(script, 1));
+	streakInc(getLevel(), lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelAddScore(lua_State *script) {
 	void (*addScore)(Level*, int, int) = KNGetSymbolAddr("_ZN5Level8addScoreEii");
-	addScore(gamectl_get_level(), lua_tointeger(script, 1), lua_tointeger(script, 2));
+	addScore(getLevel(), lua_tointeger(script, 1), lua_tointeger(script, 2));
 	return 0;
 }
 
 int knLevelExplosion(lua_State *script) {
-	Level *level = gamectl_get_level();
+	Level *level = getLevel();
 	
 	QiVec3 pos = {
 		.x = lua_tonumber(script, 1),
@@ -140,6 +149,9 @@ int knLevelExplosion(lua_State *script) {
 	return 0;
 }
 
+/**
+ * NETWORKING WRAPPERS
+ */
 int knDownloadFile(lua_State *script) {
 	/**
 	 * (bool) success = knDownloadFile((string) url, (string) path)
@@ -281,6 +293,9 @@ int knHttpPostAsync(lua_State *script) {
 	return 0;
 }
 
+/**
+ * ASSET SERVER CONTROL
+ */
 int knConnectAssetServer(lua_State *script) {
 	/**
 	 * (bool) success = knConnectAssetServer((string) host, (float) timeout)
@@ -326,6 +341,8 @@ int knIsConnectedToAssetServer(lua_State *script) {
 }
 
 /**
+ * MAIN MENU RELOADING
+ * 
  * Support reloading the main menu by simulating a press of the R debug key when
  * reloading is wanted.
  */
@@ -345,27 +362,16 @@ bool KNReload_WasKeyPressedHook(QiInput *this, int ch) {
 	return gWasKeyPressedFunc(this, ch);
 }
 
-int knEnableReloading(lua_State *script) {
-	/**
-	 * knEnableReloading()
-	 * 
-	 * Do the initial setup required for reloading. Only needs to be called once
-	 * when the game is started.
-	 */
-	
-	if (!gWasKeyPressedFunc) {
-		KNHookFunction(KNGetSymbolAddr("_ZNK7QiInput13wasKeyPressedEi"), KNReload_WasKeyPressedHook, (void **) &gWasKeyPressedFunc);
-	}
-	
-	return 0;
-}
-
 int knReload(lua_State *script) {
 	/**
 	 * knReload()
 	 * 
 	 * Reload the main menu or level on the next frame.
 	 */
+	
+	if (!gWasKeyPressedFunc) {
+		KNHookFunction(KNGetSymbolAddr("_ZNK7QiInput13wasKeyPressedEi"), KNReload_WasKeyPressedHook, (void **) &gWasKeyPressedFunc);
+	}
 	
 	gWantsReload = true;
 	return 0;
@@ -391,7 +397,6 @@ int knEnableGamectl(lua_State *script) {
 	knRegisterFunc(script, knIsConnectedToAssetServer);
 	
 	// Menu reloading
-	knRegisterFunc(script, knEnableReloading);
 	knRegisterFunc(script, knReload);
 	
 	// Level methods

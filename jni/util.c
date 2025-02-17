@@ -182,3 +182,42 @@ bool KNPreformInBackground(PthreadCallbackFunc func, void *arg) {
 	
 	return true;
 }
+
+static jmethodID jni_get_method_id(JNIEnv *jni, const char *className, const char *methodName, const char *methodSignature) {
+	jclass theClass = (*jni)->FindClass(jni, className);
+	jmethodID theMethod = (*jni)->GetMethodID(jni, theClass, methodName, methodSignature);
+	return theMethod;
+}
+
+float KNGetRefreshRate(void) {
+	/**
+	 * Get the default display's native framerate.
+	 */
+	
+	// Get JNI and current activity references (we shall need them later)
+	JNIEnv *jni = gApp->activity->env;
+	jobject nativeActivityInstance = gApp->activity->clazz;
+	
+	// Method ID for getSystemService
+	jmethodID getSystemService = jni_get_method_id(jni, "android/content/Context", "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
+	
+	// Window string (needed for getSystemService)
+	jstring window = (*jni)->NewStringUTF(jni, "window");
+	
+	// getSystemService("window")
+	jobject windowService = (*jni)->CallObjectMethod(jni, nativeActivityInstance, getSystemService, window);
+	
+	// Method ID for getDefaultDisplay
+	jmethodID getDefaultDisplay = jni_get_method_id(jni, "android/view/WindowManager", "getDefaultDisplay", "()Landroid/view/Display;");
+	
+	// .getDefaultDisplay()
+	jobject defaultDisplay = (*jni)->CallObjectMethod(jni, windowService, getDefaultDisplay);
+	
+	// Method ID for getRefreshRate
+	jmethodID getRefreshRate = jni_get_method_id(jni, "android/view/Display", "getRefreshRate", "()F");
+	
+	// .getRefreshRate()
+	float refreshRate = (*jni)->CallFloatMethod(jni, defaultDisplay, getRefreshRate);
+	
+	return refreshRate;
+}
