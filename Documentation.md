@@ -234,15 +234,41 @@ Returns `true` if an asset server is currently connected, for `false` if one is 
 
 ### Menu reloading
 
-#### `knEnableReloading()`
-
-Install the hooks required to use `knReload()`. This only needs to be called once per game launch.
-
 #### `knReload()`
 
 If on the main menu, this reloads the main menu on the next frame. The main menu script will continue to run as normal until then.
 
 If in a level, this is nearly equivlent to `mgCommand("level.restart")`.
+
+### Frame rate adjustment
+
+#### `knGetDeviceHz()`
+
+Get the refresh rate of the device's default display in hertz.
+
+#### `knSetFrameRate([frameRate, [sleepTime]])`
+
+Set the target frame rate of the game and adjust the simulation time step to compensate.
+
+With no arguments, `knSetFrameRate()` will set the game to run at the device's refresh rate, enabling the game to run on >60Hz devices at full framerate without much hard work. You might need to update timers to respect the new framerate (e.g. some bosses assume 60 ticks per second).
+
+If you just want to support >60Hz devices, simply have:
+
+```lua
+function load()
+    -- ...
+    knSetFrameRate()
+    -- ...
+end
+```
+
+in your `menu/main.lua`.
+
+With only the first argument, `knSetFrameRate(fps)` will set the game to target exactly `fps` frames per second. On devices where `knGetDeviceHz() < fps`, the game will run slower in some places.
+
+With both arguments, `knSetFrameRate(fps, sleeptime)` will set the game to run *as if* it were targeting exactly `fps` frames per second, with the caveat that it will only sleep for `sleeptime` seconds if the frame finishes rendering early AND the display refresh rate is greater than 1/fps.
+
+Please note that `knSetFrameRate(60)` is **NOT** the same as the default, due to the sleepTime being different. If you want to go back to defaults dynamically, use `knSetFrameRate(60, 0.015)`.
 
 ## System and Misc utilities
 

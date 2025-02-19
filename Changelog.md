@@ -2,6 +2,7 @@
 
 ## Release 13
 
+* Added `knGetDeviceHz` and `knSetFrameRate`
 * Removed `knEnableReloading`; you can now just `knReload()` without enabling it
 
 ## Release 12
