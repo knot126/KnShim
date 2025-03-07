@@ -263,7 +263,10 @@ int knHttpRelease(lua_State *script) {
 	knHttpContext *ctx = lua_touserdata(script, 1);
 	
 	if (ctx) {
-		http_release(ctx->context);
+		if (ctx->context) {
+			http_release(ctx->context);
+		}
+		
 		ctx->context = NULL;
 	}
 	
