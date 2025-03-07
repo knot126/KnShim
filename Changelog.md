@@ -4,6 +4,7 @@
 
 * Added `knGetDeviceHz` and `knSetFrameRate`
 * Removed `knEnableReloading`; you can now just `knReload()` without enabling it
+* Fix a bug where the game would crash if using `knHttpRelease()` explicitly
 
 ## Release 12
 

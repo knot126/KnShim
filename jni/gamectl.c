@@ -407,6 +407,7 @@ int knSetFrameRate(lua_State *script) {
 	 * Only available on 64-bit ARM devices.
 	 */
 	
+#if defined(__aarch64__)
 	int argc = lua_gettop(script);
 	
 	float targetFPS;
@@ -419,13 +420,12 @@ int knSetFrameRate(lua_State *script) {
 	}
 	
 	float timeStep = 1.0 / targetFPS;
-	uint32_t sleepTime = timeStep;
+	float sleepTime = timeStep;
 	
 	if (argc > 1) {
 		sleepTime = lua_tonumber(script, 2);
 	}
 	
-#if defined(__aarch64__)
 	float *v1 = (KNGetSymbolAddr("_ZN4GameC2EP6Deviceii") + 0xd68);
 	float *v2 = (KNGetSymbolAddr("_ZN4Game6updateEv") + 0x300);
 	float *v3 = (KNGetSymbolAddr("android_main") + 0xd9c);
