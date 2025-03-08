@@ -3,6 +3,7 @@
  */
 
 #include <dlfcn.h>
+#include <math.h>
 
 #include "lua/lua.h"
 #include "lua/lualib.h"
@@ -391,6 +392,8 @@ int knGetDeviceHz(lua_State *script) {
 	return 1;
 }
 
+#define ROUND(x) (floor(x * 10000.0f) / 10000.0f)
+
 int knSetFrameRate(lua_State *script) {
 	/**
 	 * (bool) success = knSetFrameRate([(float) frameRate, [(int) sleepTime]])
@@ -420,7 +423,7 @@ int knSetFrameRate(lua_State *script) {
 	}
 	
 	float timeStep = 1.0 / targetFPS;
-	float sleepTime = timeStep;
+	float sleepTime = ROUND(timeStep);
 	
 	if (argc > 1) {
 		sleepTime = lua_tonumber(script, 2);
