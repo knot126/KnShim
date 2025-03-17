@@ -17,6 +17,16 @@ int knGetShimVersion(lua_State *script) {
 	return 1;
 }
 
+int knGetAppSdk(lua_State *script) {
+	lua_pushinteger(script, KNGetAppSDK());
+	return 1;
+}
+
+int knGetDeviceSdk(lua_State *script) {
+	lua_pushinteger(script, KNGetDeviceSDK());
+	return 1;
+}
+
 int knGetInternalDataPath(lua_State *script) {
 	lua_pushstring(script, gAndroidInternalDataPath);
 	return 1;
@@ -62,6 +72,8 @@ int knInclude(lua_State *script) {
 
 int knEnableSystem(lua_State *script) {
 	knRegisterFunc(script, knGetShimVersion);
+	knRegisterFunc(script, knGetAppSdk);
+	knRegisterFunc(script, knGetDeviceSdk);
 	knRegisterFunc(script, knGetInternalDataPath);
 	knRegisterFunc(script, knGetExternalDataPath);
 	knRegisterFunc(script, knInclude);

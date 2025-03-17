@@ -13,6 +13,59 @@ struct android_app *gApp;
 
 Leaf *gLeaf;
 
+void *gLibAndroid;
+
+bool KNInit(void) {
+	/**
+	 * Initialise some core stuff the shim needs
+	 */
+	
+	// dynamically load libandroid.so for functions that might not be available
+	// in older api levels and thus cannot be statically linked if we want to
+	// keep running on these older versions.
+	gLibAndroid = dlopen("libandroid.so", RTLD_NOW | RTLD_GLOBAL);
+	
+	if (!gLibAndroid) {
+		return false;
+	}
+	
+	return true;
+}
+
+#define LOAD_LIBANDROID_FUNC(RET, NAME, SIG) RET (*NAME)SIG = dlsym(gLibAndroid, #NAME);
+
+int KNGetDeviceSDK(void) {
+	/**
+	 * Get the SDK level of the device this app is running on. If less than 24,
+	 * this returns -1.
+	 */
+	
+	LOAD_LIBANDROID_FUNC(int, android_get_device_api_level, (void));
+	
+	if (android_get_device_api_level) {
+		return android_get_device_api_level();
+	}
+	else {
+		return -1;
+	}
+}
+
+int KNGetAppSDK(void) {
+	/**
+	 * Get the target SDK of the currently running app. This may return -1 if
+	 * the system is running target SDK less than 24.
+	 */
+	
+	LOAD_LIBANDROID_FUNC(int, android_get_application_target_sdk_version, (void));
+	
+	if (android_get_application_target_sdk_version) {
+		return android_get_application_target_sdk_version();
+	}
+	else {
+		return -1;
+	}
+}
+
 void *KNGetSymbolAddr(const char *name) {
 	/**
 	 * Get the address of a symbol in libsmashhit.so, regardless of the loader

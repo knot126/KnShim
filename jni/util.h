@@ -30,9 +30,13 @@ extern struct android_app *gApp;
 typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
 typedef void *(*PthreadCallbackFunc)(void *arg);
 
+bool KNInit(void);
+
+int KNGetDeviceSDK(void);
+int KNGetAppSDK(void);
+
 void *KNGetSymbolAddr(const char *name);
 int invert_branch(void *addr);
-int replace_function(void *from, void *to);
 
 bool KNHookFunction(void *func, void *hook, void **orig);
 bool KNLoadAsset(const char *path, void **data, size_t *size);
@@ -42,5 +46,6 @@ float KNGetRefreshRate(void);
 #define knRegisterFunc(SCRIPT, NAME) lua_register(SCRIPT, #NAME, NAME)
 #define knLuaPushEnum(SCRIPT, ENUM_NAME) lua_pushinteger(SCRIPT, ENUM_NAME); lua_setglobal(SCRIPT, #ENUM_NAME);
 #define knReturnNil(SCRIPT) lua_pushnil(SCRIPT); return 1;
+#define KNLoadFunc(RET, NAME, SIG) RET (*NAME) SIG = KNGetSymbolAddr(#NAME);
 
 #endif // _SHIM_UTIL_H

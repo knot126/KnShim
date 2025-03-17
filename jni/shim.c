@@ -47,6 +47,14 @@ void android_main(struct android_app *app) {
 	// Set gApp to android app structure
 	gApp = app;
 	
+	if (!KNInit()) {
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "Early shim init failed");
+		return;
+	}
+	else {
+		__android_log_print(ANDROID_LOG_INFO, TAG, "Early shim successful, app sdk = %d, device sdk = %d", KNGetAppSDK(), KNGetDeviceSDK());
+	}
+	
 	// Create an instance of Leaf for loading the main binary
 	gLeaf = LeafInit();
 	

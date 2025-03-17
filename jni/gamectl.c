@@ -444,6 +444,20 @@ int knSetFrameRate(lua_State *script) {
 	return 1;
 }
 
+/**
+ * Misc utilities
+ */
+int knJavaCommand(lua_State *script) {
+	KNLoadFunc(QiString, _Z11javaCommandRK8QiString, (QiString *command));
+	
+	const char *cmd = lua_tostring(script, 1);
+	cmd = cmd ? cmd : "";
+	QiString qCmd = MakeQiString(cmd);
+	QiString result = _Z11javaCommandRK8QiString(&qCmd);
+	lua_pushstring(script, result.data ? result.data : result.cached);
+	return 1;
+}
+
 int knEnableGamectl(lua_State *script) {
 	// Cheats
 	knRegisterFunc(script, knSetBalls);
@@ -477,7 +491,8 @@ int knEnableGamectl(lua_State *script) {
 	knRegisterFunc(script, knGetDeviceHz);
 	knRegisterFunc(script, knSetFrameRate);
 	
-	// Game methods
+	// Misc utilities
+	knRegisterFunc(script, knJavaCommand);
 	
 	return 0;
 }
