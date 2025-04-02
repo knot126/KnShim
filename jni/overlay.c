@@ -34,7 +34,7 @@ void (*Player_zero)(Player *this);
 int zrBalls = 25;
 int zrStreak = 0;
 
-FILE *KNLoadFromZIPOverlayInternal(const char *path);
+FILE *KNLoadFromZIPOverlayInternal(mz_zip_archive *archive, const char *path, int *sizeout);
 
 bool file_input_stream_open_hook(QiFileInputStream *this, char *path) {
 	/**
@@ -43,11 +43,26 @@ bool file_input_stream_open_hook(QiFileInputStream *this, char *path) {
 	 */
 	
 	// Try loading from overlay first
-	FILE *fi = KNLoadFromZIPOverlayInternal(path);
+	FILE *fi = KNLoadFromZIPOverlayInternal(gZip, path, &this->length);
 	
 	if (fi) {
 		this->file = fi;
-		this->androidAsset = NULL; // ignored if null
+		this->aasset = NULL; // ignored if null
+		this->headpos = 0;
+		return true;
+	}
+	
+	// Also try loading without .mp3 (this is really needed ig...)
+	char path_no_mp3[strlen(path)+1];
+	strcpy(path_no_mp3, path);
+	path_no_mp3[strlen(path)-4] = '\0';
+	
+	fi = KNLoadFromZIPOverlayInternal(gZip, path_no_mp3, &this->length);
+	
+	if (fi) {
+		this->file = fi;
+		this->aasset = NULL; // ignored if null
+		this->headpos = 0;
 		return true;
 	}
 	
@@ -123,41 +138,56 @@ bool unmount_overlay(void) {
 	return true;
 }
 
-FILE *KNLoadFromZIPOverlayInternal(const char *path) {
+FILE *KNLoadFromZIPOverlayInternal(mz_zip_archive *archive, const char *path, int *sizeout) {
 	/**
 	 * Load a file from the current overlay, if it exists.
 	 * 
 	 * TODO: In the future, copy data to the FILE* more efficently.
 	 */
 	
-	if (!gZip) {
+	if (!archive) {
 		__android_log_print(ANDROID_LOG_ERROR, TAG, "Overlay is not mounted");
 		return NULL;
 	}
 	
 	size_t size;
-	void *data = mz_zip_reader_extract_file_to_heap(gZip, path, &size, 0);
+	void *data = mz_zip_reader_extract_file_to_heap(archive, path, &size, 0);
 	
 	if (!data) {
-		__android_log_print(ANDROID_LOG_ERROR, TAG, "mz error: %s", mz_zip_get_error_string(mz_zip_get_last_error(gZip)));
+		__android_log_print(ANDROID_LOG_ERROR, TAG, "miniz zip error: %s: %s", path, mz_zip_get_error_string(mz_zip_get_last_error(archive)));
 		return NULL;
 	}
 	else {
 		// Open an in-memory stream
-		FILE *fi = fmemopen(NULL, size, "rb+");
+		FILE *file = fmemopen(NULL, size, "rb+");
 		
-		if (!fi) {
+		if (!file) {
 			free(data);
 			return NULL;
 		}
 		
 		// Write data to buffer
-		fwrite(data, 1, size, fi);
+		if (fwrite(data, 1, size, file) != size) {
+			free(data);
+			return NULL;
+		}
+		
+		free(data);
 		
 		// Seek back to start for reading
-		fseek(fi, 0, SEEK_SET);
+		rewind(file);
 		
-		return fi;
+		// Flush any changes to the stream
+		// Probably(?) not needed with fmemopen(), but we might use tmpfile() as
+		// a fallback in the future when the API level is too low to support
+		// fmemopen() or allocation fails.
+		fflush(file);
+		
+		*sizeout = size;
+		
+		__android_log_print(ANDROID_LOG_INFO, TAG, "loaded from overlay: %s (sz=%d, fp=%p)", path, size, file);
+		
+		return file;
 	}
 }
 

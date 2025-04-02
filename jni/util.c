@@ -14,6 +14,7 @@ struct android_app *gApp;
 Leaf *gLeaf;
 
 void *gLibAndroid;
+void *gLibC;
 
 bool KNInit(void) {
 	/**
@@ -26,6 +27,13 @@ bool KNInit(void) {
 	gLibAndroid = dlopen("libandroid.so", RTLD_NOW | RTLD_GLOBAL);
 	
 	if (!gLibAndroid) {
+		return false;
+	}
+	
+	// same goes for libc
+	gLibC = dlopen("libc.so", RTLD_NOW | RTLD_GLOBAL);
+	
+	if (!gLibC) {
 		return false;
 	}
 	

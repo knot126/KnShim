@@ -26,6 +26,8 @@ typedef uint8_t shortop_t;
 
 extern Leaf *gLeaf;
 extern struct android_app *gApp;
+extern void *gLibAndroid;
+extern void *gLibC;
 
 typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
 typedef void *(*PthreadCallbackFunc)(void *arg);
