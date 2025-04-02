@@ -84,7 +84,7 @@ typedef struct QiFileInputStream {
 	QiString path;
 	int length;
 	int headpos;
-	size_t _unknown1;
+	void *aasset;
 } QiFileInputStream;
 
 typedef struct QiFileOutputStream {
@@ -132,7 +132,7 @@ typedef struct QiFileInputStream {
 	QiString path;
 	int length;
 	int headpos;
-	size_t _unknown1;
+	void *aasset;
 } QiFileInputStream;
 
 typedef struct QiFileOutputStream {
