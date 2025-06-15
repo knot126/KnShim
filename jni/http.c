@@ -42,9 +42,22 @@ int knHttpRequest_addmetatable(lua_State *script) {
 // HTTP
 int knHttpRequest(lua_State *script) {
 	/**
+	 * getRequest = knHttpRequest(url)
+	 * postRequest = knHttpRequest(url, body)
+	 * request = knHttpRequest(method, url, body, [headers])
+	 * 
+	 * (For legacy GET and POST requests:)
 	 * Create an HTTP GET or POST request. The first argument should be a
 	 * url string. The second argument is an optional POST body. If a body
 	 * is not specified GET is used instead of POST.
+	 * 
+	 * (For the modern API:)
+	 * Creates an HTTP request. The first argument should be the HTTP method,
+	 * that is GET, POST, PUT, DELETE etc. The second is the URL to post to.
+	 * The third argument is the body of the request. If a body is not needed
+	 * or the request type does not use a body, an empty string can be used to
+	 * exclude the request body. The fourth argument is an optional table of
+	 * HTTP headers to include.
 	 */
 	
 	if (lua_gettop(script) < 1) {
@@ -59,16 +72,29 @@ int knHttpRequest(lua_State *script) {
 		return 1;
 	}
 	
+	int top = lua_gettop(script);
+	
 	http_t *request;
 	
-	if (lua_gettop(script) == 1) {
-		request = http_get(url, NULL);
+	if (top == 1) {
+		request = http_request("GET", url, NULL, 0, NULL, 0, NULL);
 	}
-	else {
+	else if (top == 2) {
 		size_t size = 0;
 		const char *body = lua_tolstring(script, 2, &size);
 		
-		request = http_post(url, body, size, NULL);
+		request = http_request("POST", url, body, size, NULL, 0, NULL);
+	}
+	else {
+		const char *method = lua_tostring(script, 1);
+		url = lua_tostring(script, 2);
+		
+		size_t size = 0;
+		const char *body = lua_tolstring(script, 3, &size);
+		
+		/// TODO TODO TODO!!! Need to implement headers support
+		
+		request = http_request(method, url, size == 0 ? NULL : body, size, NULL, 0, NULL);
 	}
 	
 	if (!request) {
@@ -171,8 +197,10 @@ int knHttpDataSize(lua_State *script) {
 	return 1;
 }
 
-int knHttpContentType(lua_State *script) {
+int knHttpGetHeader(lua_State *script) {
 	/**
+	 * (string|nil) header = knHttpGetHeader(request, (string) name, (int) nth)
+	 * 
 	 * Return a string representing the content type of the data
 	 */
 	
@@ -188,8 +216,19 @@ int knHttpContentType(lua_State *script) {
 		return 1;
 	}
 	
-	if (ctx->context->content_type && strlen(ctx->context->content_type) != 0) {
-		lua_pushstring(script, ctx->context->content_type);
+	const char *name = lua_tostring(script, 2);
+	
+	if (!name) {
+		lua_pushnil(script);
+		return 1;
+	}
+	
+	size_t nth = lua_tointeger(script, 3);
+	
+	const char *value = http_get_header(ctx->context, name, nth);
+	
+	if (value) {
+		lua_pushstring(script, value);
 	}
 	else {
 		lua_pushnil(script);
@@ -322,7 +361,7 @@ int knEnableHttp(lua_State *script) {
 	lua_register(script, "knHttpUpdate", knHttpUpdate);
 	lua_register(script, "knHttpData", knHttpData);
 	lua_register(script, "knHttpDataSize", knHttpDataSize);
-	lua_register(script, "knHttpContentType", knHttpContentType);
+	lua_register(script, "knHttpGetHeader", knHttpGetHeader);
 	lua_register(script, "knHttpError", knHttpError);
 	lua_register(script, "knHttpErrorCode", knHttpErrorCode);
 	lua_register(script, "knHttpRelease", knHttpRelease);
