@@ -458,6 +458,31 @@ int knJavaCommand(lua_State *script) {
 	return 1;
 }
 
+void (*QiMd5_compute)(QiMd5 *this, void *data, int length);
+
+int knMd5(lua_State *script) {
+	/**
+	 * hash = knMd5(data)
+	 * 
+	 * Compute the MD5 hash of data
+	 */
+	
+	size_t size;
+	const char *data = lua_tolstring(script, 1, &size);
+	
+	if (!data) {
+		lua_pushnil(script);
+		return 1;
+	}
+	
+	QiMd5 md5;
+	QiMd5_compute(&md5, (void *) data, size);
+	
+	lua_pushlstring(script, (const char *) &md5.final_hash, 16);
+	
+	return 1;
+}
+
 int knEnableGamectl(lua_State *script) {
 	// Cheats
 	knRegisterFunc(script, knSetBalls);
@@ -493,6 +518,10 @@ int knEnableGamectl(lua_State *script) {
 	
 	// Misc utilities
 	knRegisterFunc(script, knJavaCommand);
+	knRegisterFunc(script, knMd5);
+	
+	// Lookup required function addresses
+	QiMd5_compute = KNGetSymbolAddr("_ZN5QiMd57computeEPKvi");
 	
 	return 0;
 }

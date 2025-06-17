@@ -45,6 +45,23 @@ typedef struct QiInput_Event {
 	int y;
 } QiInput_Event;
 
+// From Aladdin Enterprise's MD5 implemenation which Dennis uses.
+typedef unsigned char md5_byte_t; /* 8-bit byte */
+typedef unsigned int md5_word_t; /* 32-bit word */
+
+typedef struct md5_state_s {
+    md5_word_t count[2];	/* message length in bits, lsw first */
+    md5_word_t abcd[4];		/* digest buffer */
+    md5_byte_t buf[64];		/* accumulate block */
+} md5_state_t;
+
+typedef struct QiMd5 {
+	md5_state_t md5_state;
+	md5_byte_t final_hash[16];
+} QiMd5;
+
+/// !!! PLATFORM SPECIFIC (mostly unfinished structs) ///
+
 #if defined(__arm__) || defined(__i386__)
 
 typedef struct Player {
