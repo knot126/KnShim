@@ -472,6 +472,7 @@ http_t *http_request(const char *method, char const *url, const void *data, size
     if (headers) {
         for (size_t i = 0; i < num_headers; i++) {
             snprintf(temp_line, TEMP_LINE_LENGTH, "%s: %s\r\n", headers[i].name, headers[i].value);
+            strcat(request_header, temp_line);
         }
     }
     

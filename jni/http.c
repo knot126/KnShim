@@ -69,6 +69,9 @@ static size_t fillHeaders(lua_State *L, int t, http_header_t *headers, size_t co
 		lua_pop(L, 2);
 	}
 	
+	// Pop the table copy
+	lua_pop(L, 1);
+	
 	// Return number of headers copied (should be all of them)
 	return i;
 }
