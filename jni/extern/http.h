@@ -391,46 +391,7 @@ static http_internal_t* http_internal_create( size_t request_data_size, void* me
     internal->request_data_size = 0;
     
     return internal;
-    }
-
-/*
-http_t* http_get(const char *verb, char const* url, void* memctx) {
-    #ifdef _WIN32
-        WSADATA wsa_data;
-        if( WSAStartup( MAKEWORD( 1, 0 ), &wsa_data ) != 0 ) return NULL;
-    #endif
-    
-    char address[ 256 ];
-    char port[ 16 ];
-    char const* path;
-    
-    if( http_internal_parse_url( url, address, sizeof( address ), port, sizeof( port ), &path ) == 0 )
-        return NULL; 
-
-    HTTP_SOCKET socket = http_internal_connect( address, port );
-    if( socket == HTTP_INVALID_SOCKET ) return NULL;
-    
-    http_internal_t* internal = http_internal_create( 0, memctx );
-    internal->socket = socket;
-
-    char* request_header;
-    size_t request_header_len = 64 + strlen( path ) + strlen( address ) + strlen( port );
-    
-    if (request_header_len < sizeof( internal->request_header )) {
-        internal->request_header_large = NULL;
-        request_header = internal->request_header;
-    }
-    else {
-        internal->request_header_large = (char*) HTTP_MALLOC( memctx, request_header_len + 1 );
-        request_header = internal->request_header_large;
-    }
-    
-    int default_http_port = (strcmp(port, "80") == 0);
-    
-    snprintf(request_header, request_header_len, "%s %s HTTP/1.0\r\nHost: %s%s%s\r\n\r\n", verb, path, address, default_http_port ? "" : ":", default_http_port ? "" : port);
-    
-    return &internal->http;
-}*/
+}
 
 static size_t http_approximate_headers_size(const http_header_t *headers, size_t num_headers) {
     /**
@@ -462,7 +423,7 @@ http_t *http_request(const char *method, char const *url, const void *data, size
     char port[ 16 ];
     char const* path;
     
-    if (http_internal_parse_url( url, address, sizeof( address ), port, sizeof( port ), &path ) == 0 ) {
+    if (http_internal_parse_url( url, address, sizeof( address ), port, sizeof( port ), &path ) == 0) {
         return NULL;
     }
 
@@ -475,7 +436,7 @@ http_t *http_request(const char *method, char const *url, const void *data, size
     http_internal_t* internal = http_internal_create( size, memctx );
     internal->socket = socket;
 
-    char* request_header;
+    char* request_header = NULL;
     size_t request_header_len = 64 + strlen(method) + strlen(path) + strlen(address) + strlen(port) + http_approximate_headers_size(headers, num_headers);
     
     if (request_header_len < sizeof( internal->request_header )) {
@@ -487,9 +448,11 @@ http_t *http_request(const char *method, char const *url, const void *data, size
         request_header = internal->request_header_large;
     }
     
+    request_header[0] = '\0';
+    
     int default_http_port = (strcmp(port, "80") == 0);
     
-    char temp_line[TEMP_LINE_LENGTH];
+    char temp_line[TEMP_LINE_LENGTH] = {};
     
     // Request line
     snprintf(temp_line, TEMP_LINE_LENGTH, "%s %s HTTP/1.0\r\n", method, path);
@@ -514,6 +477,12 @@ http_t *http_request(const char *method, char const *url, const void *data, size
     
     // End of headers
     strcat(request_header, "\r\n");
+    
+    if (request_header_len <= strlen(request_header)) {
+        // We're overwriting the blasted heap! You idiot! You know you shouldn't
+        // have used strcat! Just abort now so we don't loose our minds later.
+        abort();
+    }
     
     // Body
     if (data) {
