@@ -19,3 +19,5 @@ if not status and len(sys.argv) > 1 and sys.argv[1] == "--upgrade":
 		apk_path = f"/tmp/apk-editor-studio/apk/{apks[0]}"
 		print(f"Upgrade apk at {apk_path}")
 		shutil.copytree("./libs", f"{apk_path}/lib", dirs_exist_ok=True)
+	else:
+		print(f"No APKs to upgrade")

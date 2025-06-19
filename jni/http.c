@@ -21,22 +21,56 @@ enum {
 	KN_HTTP_ERROR,
 };
 
+// Table functions - these should probably be split out, or better yet load lua
+// dynamically from Smash Hit.
+int (*sh_luaL_newmetatable)(lua_State *L, const char *tname);
+void *(*sh_lua_settable)(lua_State *L, int index);
+void (*sh_lua_setmetatable)(lua_State *L, int index);
+int (*sh_lua_next)(lua_State *L, int index);
+size_t (*sh_lua_objlen)(lua_State *L, int index);
+
 int knHttpRelease(lua_State *script);
 
 int knHttpRequest_addmetatable(lua_State *script) {
-	int (*luaL_newmetatable)(lua_State *L, const char *tname) = KNGetSymbolAddr("luaL_newmetatable");
-	void *(*lua_settable)(lua_State *L, int index) = KNGetSymbolAddr("lua_settable");
-	void (*lua_setmetatable)(lua_State *L, int index) = KNGetSymbolAddr("lua_setmetatable");
-	
-	if (luaL_newmetatable(script, "knHttpContext")) {
+	if (sh_luaL_newmetatable(script, "knHttpContext")) {
 		lua_pushstring(script, "__gc");
 		lua_pushcfunction(script, knHttpRelease);
-		lua_settable(script, -3);
+		sh_lua_settable(script, -3);
 	}
 	
-	lua_setmetatable(script, -2);
+	sh_lua_setmetatable(script, -2);
 	
 	return 0;
+}
+
+static size_t fillHeaders(lua_State *L, int t, http_header_t *headers, size_t count) {
+	// Push a copy of the table for reference purposes
+	lua_pushvalue(L, t);
+	
+	// First key (dummy)
+	lua_pushnil(L);
+	
+	// Iterate keys
+	size_t i;
+	
+	for (i = 0; sh_lua_next(L, -2) && i < count; i++) {
+		// Push a temp copy of the key so we can safely tostring() it.
+		lua_pushvalue(L, -2);
+		
+		// Copy to header table
+		headers[i].name = lua_tostring(L, -1);
+		headers[i].value = lua_tostring(L, -2);
+		
+		if (!headers[i].name || !headers[i].value) {
+			luaL_error(L, "Invalid HTTP header name (%s) or value (%s): make sure keys and values of the headers table support being converted to a string using tostring().", headers[i].name ? headers[i].name : "<null>", headers[i].value ? headers[i].value : "<null>");
+		}
+		
+		// Pop our temp key and the value
+		lua_pop(L, 2);
+	}
+	
+	// Return number of headers copied (should be all of them)
+	return i;
 }
 
 // HTTP
@@ -92,9 +126,18 @@ int knHttpRequest(lua_State *script) {
 		size_t size = 0;
 		const char *body = lua_tolstring(script, 3, &size);
 		
-		/// TODO TODO TODO!!! Need to implement headers support
-		
-		request = http_request(method, url, size == 0 ? NULL : body, size, NULL, 0, NULL);
+		// Handle headers (or dont)
+		if (lua_istable(script, 4)) {
+			size_t num_headers = sh_lua_objlen(script, 4);
+			http_header_t headers[num_headers];
+			
+			fillHeaders(script, 4, headers, num_headers);
+			
+			request = http_request(method, url, body, size, headers, num_headers, NULL);
+		}
+		else {
+			request = http_request(method, url, body, size, NULL, 0, NULL);
+		}
 	}
 	
 	if (!request) {
@@ -369,6 +412,12 @@ int knEnableHttp(lua_State *script) {
 	lua_pushinteger(script, KN_HTTP_PENDING); lua_setglobal(script, "KN_HTTP_PENDING");
 	lua_pushinteger(script, KN_HTTP_DONE); lua_setglobal(script, "KN_HTTP_DONE");
 	lua_pushinteger(script, KN_HTTP_ERROR); lua_setglobal(script, "KN_HTTP_ERROR");
-
+	
+	sh_luaL_newmetatable = KNGetSymbolAddr("luaL_newmetatable");
+	sh_lua_settable = KNGetSymbolAddr("lua_settable");
+	sh_lua_setmetatable = KNGetSymbolAddr("lua_setmetatable");
+	sh_lua_next = KNGetSymbolAddr("lua_next");
+	sh_lua_objlen = KNGetSymbolAddr("lua_objlen");
+	
 	return 0;
 }
