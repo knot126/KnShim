@@ -199,7 +199,7 @@ bool KNLoadAsset(const char *path, void **data, size_t *size) {
 	}
 	
 	size_t t_size = AAsset_getLength(asset);
-	void *t_data = AAsset_getBuffer(asset);
+	const void *t_data = AAsset_getBuffer(asset);
 	
 	// Duplicate asset data with NUL at end
 	char *f_data = malloc(t_size + 1);
@@ -244,22 +244,22 @@ bool KNPreformInBackground(PthreadCallbackFunc func, void *arg) {
 	return true;
 }
 
+#define JNI_EXCEPTION_ABORT(JNI, ...) {\
+	if ((*JNI)->ExceptionCheck(JNI) == JNI_TRUE) {\
+		(*JNI)->ExceptionDescribe(JNI);\
+		__android_log_print(ANDROID_LOG_FATAL, TAG, __VA_ARGS__);\
+		abort();\
+	}\
+}
+
 static jmethodID jni_get_method_id(JNIEnv *jni, const char *className, const char *methodName, const char *methodSignature) {
 	jclass theClass = (*jni)->FindClass(jni, className);
 	
-	if ((*jni)->ExceptionCheck(jni) == JNI_TRUE) {
-		(*jni)->ExceptionDescribe(jni);
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "jni_get_method_id(%p, %s, %s, %s): Exception pending, fuck! Maybe the class wasn't found?", jni, className, methodName, methodSignature);
-		abort();
-	}
+	JNI_EXCEPTION_ABORT(jni, "jni_get_method_id(%p, %s, %s, %s): Exception pending, fuck! Maybe the class wasn't found?", jni, className, methodName, methodSignature);
 	
 	jmethodID theMethod = (*jni)->GetMethodID(jni, theClass, methodName, methodSignature);
 	
-	if ((*jni)->ExceptionCheck(jni) == JNI_TRUE) {
-		(*jni)->ExceptionDescribe(jni);
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "jni_get_method_id(%p, %s, %s, %s): Exception pending, fuck! Maybe the method wasn't found?", jni, className, methodName, methodSignature);
-		abort();
-	}
+	JNI_EXCEPTION_ABORT(jni, "jni_get_method_id(%p, %s, %s, %s): Exception pending, fuck! Maybe the method wasn't found?", jni, className, methodName, methodSignature);
 	
 	return theMethod;
 }
@@ -286,20 +286,12 @@ float KNGetRefreshRate(void) {
 	// Window string (needed for getSystemService)
 	jstring window = (*jni)->NewStringUTF(jni, "window");
 	
-	if ((*jni)->ExceptionCheck(jni) == JNI_TRUE) {
-		(*jni)->ExceptionDescribe(jni);
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "pending exception after creating window string");
-		abort();
-	}
+	JNI_EXCEPTION_ABORT(jni, "pending exception after creating window string");
 	
 	// getSystemService("window")
 	jobject windowService = (*jni)->CallObjectMethod(jni, nativeActivityInstance, getSystemService, window);
 	
-	if ((*jni)->ExceptionCheck(jni) == JNI_TRUE) {
-		(*jni)->ExceptionDescribe(jni);
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "pending exception after nativeActivityInstance.getSystemService('window')");
-		abort();
-	}
+	JNI_EXCEPTION_ABORT(jni, "pending exception after nativeActivityInstance.getSystemService('window')");
 	
 	// Method ID for getDefaultDisplay
 	jmethodID getDefaultDisplay = jni_get_method_id(jni, "android/view/WindowManager", "getDefaultDisplay", "()Landroid/view/Display;");
@@ -307,11 +299,7 @@ float KNGetRefreshRate(void) {
 	// .getDefaultDisplay()
 	jobject defaultDisplay = (*jni)->CallObjectMethod(jni, windowService, getDefaultDisplay);
 	
-	if ((*jni)->ExceptionCheck(jni) == JNI_TRUE) {
-		(*jni)->ExceptionDescribe(jni);
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "pending exception after windowService.getDefaultDisplay()");
-		abort();
-	}
+	JNI_EXCEPTION_ABORT(jni, "pending exception after windowService.getDefaultDisplay()");
 	
 	// Method ID for getRefreshRate
 	jmethodID getRefreshRate = jni_get_method_id(jni, "android/view/Display", "getRefreshRate", "()F");
@@ -319,11 +307,7 @@ float KNGetRefreshRate(void) {
 	// .getRefreshRate()
 	float refreshRate = (*jni)->CallFloatMethod(jni, defaultDisplay, getRefreshRate);
 	
-	if ((*jni)->ExceptionCheck(jni) == JNI_TRUE) {
-		(*jni)->ExceptionDescribe(jni);
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "pending exception after defaultDisplay.getRefreshRate()");
-		abort();
-	}
+	JNI_EXCEPTION_ABORT(jni, "pending exception after defaultDisplay.getRefreshRate()");
 	
 	return refreshRate;
 }

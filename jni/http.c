@@ -28,6 +28,7 @@ void *(*sh_lua_settable)(lua_State *L, int index);
 void (*sh_lua_setmetatable)(lua_State *L, int index);
 int (*sh_lua_next)(lua_State *L, int index);
 size_t (*sh_lua_objlen)(lua_State *L, int index);
+void (*sh_lua_pushvalue)(lua_State *L, int index);
 
 int knHttpRelease(lua_State *script);
 
@@ -43,9 +44,25 @@ int knHttpRequest_addmetatable(lua_State *script) {
 	return 0;
 }
 
-static size_t fillHeaders(lua_State *L, int t, http_header_t *headers, size_t count) {
+size_t seqenceLength(lua_State *L, int t) {
+	/**
+	 * Get the length of a table, even if its not array like
+	 */
+	
+	lua_pushnil(L);
+	
+	size_t i;
+	
+	for (i = 0; sh_lua_next(L, t); i++) {
+		lua_pop(L, 1);
+	}
+	
+	return i;
+}
+
+size_t fillHeaders(lua_State *L, int t, http_header_t *headers, size_t count) {
 	// Push a copy of the table for reference purposes
-	lua_pushvalue(L, t);
+	sh_lua_pushvalue(L, t);
 	
 	// First key (dummy)
 	lua_pushnil(L);
@@ -55,7 +72,7 @@ static size_t fillHeaders(lua_State *L, int t, http_header_t *headers, size_t co
 	
 	for (i = 0; sh_lua_next(L, -2) && i < count; i++) {
 		// Push a temp copy of the key so we can safely tostring() it.
-		lua_pushvalue(L, -2);
+		sh_lua_pushvalue(L, -2);
 		
 		// Copy to header table
 		headers[i].name = lua_tostring(L, -1);
@@ -114,9 +131,11 @@ int knHttpRequest(lua_State *script) {
 	http_t *request;
 	
 	if (top == 1) {
+		__android_log_print(ANDROID_LOG_WARN, "smashhit", "Legacy http API (GET)");
 		request = http_request("GET", url, NULL, 0, NULL, 0, NULL);
 	}
 	else if (top == 2) {
+		__android_log_print(ANDROID_LOG_WARN, "smashhit", "Legacy http API (POST)");
 		size_t size = 0;
 		const char *body = lua_tolstring(script, 2, &size);
 		
@@ -131,14 +150,18 @@ int knHttpRequest(lua_State *script) {
 		
 		// Handle headers (or dont)
 		if (lua_istable(script, 4)) {
-			size_t num_headers = sh_lua_objlen(script, 4);
+			size_t num_headers = seqenceLength(script, 4);
 			http_header_t headers[num_headers];
+			
+			__android_log_print(ANDROID_LOG_INFO, "smashhit", "Write %zu http headers", num_headers);
 			
 			fillHeaders(script, 4, headers, num_headers);
 			
 			request = http_request(method, url, body, size, headers, num_headers, NULL);
 		}
 		else {
+			__android_log_print(ANDROID_LOG_INFO, "smashhit", "No headers");
+			
 			request = http_request(method, url, body, size, NULL, 0, NULL);
 		}
 	}
@@ -421,6 +444,7 @@ int knEnableHttp(lua_State *script) {
 	sh_lua_setmetatable = KNGetSymbolAddr("lua_setmetatable");
 	sh_lua_next = KNGetSymbolAddr("lua_next");
 	sh_lua_objlen = KNGetSymbolAddr("lua_objlen");
+	sh_lua_pushvalue = KNGetSymbolAddr("lua_pushvalue");
 	
 	return 0;
 }
