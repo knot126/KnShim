@@ -44,6 +44,7 @@ bool KNHookFunction(void *func, void *hook, void **orig);
 bool KNLoadAsset(const char *path, void **data, size_t *size);
 bool KNPreformInBackground(PthreadCallbackFunc func, void *arg);
 float KNGetRefreshRate(void);
+bool KNGetAppVersion(char *buffer, size_t maxSize);
 
 #define knRegisterFunc(SCRIPT, NAME) lua_register(SCRIPT, #NAME, NAME)
 #define knLuaPushEnum(SCRIPT, ENUM_NAME) lua_pushinteger(SCRIPT, ENUM_NAME); lua_setglobal(SCRIPT, #ENUM_NAME);

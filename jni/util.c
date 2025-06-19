@@ -264,6 +264,18 @@ static jmethodID jni_get_method_id(JNIEnv *jni, const char *className, const cha
 	return theMethod;
 }
 
+static jfieldID jni_get_field_id(JNIEnv *jni, const char *className, const char *fieldName, const char *fieldSignature) {
+	jclass theClass = (*jni)->FindClass(jni, className);
+	
+	JNI_EXCEPTION_ABORT(jni, "jni_get_field_id(%p, %s, %s, %s): Exception pending, fuck! Maybe the class wasn't found?", jni, className, fieldName, fieldSignature);
+	
+	jfieldID theField = (*jni)->GetFieldID(jni, theClass, fieldName, fieldSignature);
+	
+	JNI_EXCEPTION_ABORT(jni, "jni_get_field_id(%p, %s, %s, %s): Exception pending, fuck! Maybe the method wasn't found?", jni, className, fieldName, fieldSignature);
+	
+	return theField;
+}
+
 float KNGetRefreshRate(void) {
 	/**
 	 * Get the default display's native framerate.
@@ -310,4 +322,53 @@ float KNGetRefreshRate(void) {
 	JNI_EXCEPTION_ABORT(jni, "pending exception after defaultDisplay.getRefreshRate()");
 	
 	return refreshRate;
+}
+
+bool KNGetAppVersion(char *buffer, size_t maxSize) {
+	/**
+	 * Query the app's version string
+	 */
+	
+	JavaVM *vm = gApp->activity->vm;
+	JNIEnv *jni = NULL;
+	
+	if ((*vm)->GetEnv(vm, (void **)&jni, JNI_VERSION_1_6) != JNI_OK) {
+		__android_log_print(ANDROID_LOG_FATAL, TAG, "JNI not okay, go fuck yourself :)");
+		abort();
+	}
+	
+	jobject nativeActivityInstance = gApp->activity->clazz;
+	
+	// Method IDs
+	jmethodID getPackageName = jni_get_method_id(jni, "android/app/NativeActivity", "getPackageName", "()Ljava/lang/String;");
+	jmethodID getPackageManager = jni_get_method_id(jni, "android/app/NativeActivity", "getPackageManager", "()Landroid/content/pm/PackageManager;");
+	jmethodID getPackageInfo = jni_get_method_id(jni, "android/content/pm/PackageManager", "getPackageInfo", "(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;");
+	
+	// Field ID
+	jfieldID versionName = jni_get_field_id(jni, "android/content/pm/PackageInfo", "versionName", "Ljava/lang/String;");
+	
+	jobject packageName = (*jni)->CallObjectMethod(jni, nativeActivityInstance, getPackageName);
+	JNI_EXCEPTION_ABORT(jni, "pending exception after nativeActivity.getPackageName()");
+	
+	jobject packageManager = (*jni)->CallObjectMethod(jni, nativeActivityInstance, getPackageManager);
+	JNI_EXCEPTION_ABORT(jni, "pending exception after nativeActivity.getPackageManager()");
+	
+	jobject packageInfo = (*jni)->CallObjectMethod(jni, packageManager, getPackageInfo, packageName, 0);
+	JNI_EXCEPTION_ABORT(jni, "pending exception after packageManager.getPackageInfo(packageName, 0)");
+	
+	jstring vn = (*jni)->GetObjectField(jni, packageInfo, versionName);
+	JNI_EXCEPTION_ABORT(jni, "pending exception after vn = packageInfo.versionName");
+	
+	const char *theString = (*jni)->GetStringUTFChars(jni, vn, NULL);
+	
+	if (!theString) {
+		buffer[0] = '\0';
+		return false;
+	}
+	
+	strncpy(buffer, theString, maxSize);
+	
+	(*jni)->ReleaseStringUTFChars(jni, vn, theString);
+	
+	return true;
 }

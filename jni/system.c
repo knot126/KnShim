@@ -17,6 +17,19 @@ int knGetShimVersion(lua_State *script) {
 	return 1;
 }
 
+int knGetAppVersion(lua_State *script) {
+	char buf[256];
+	
+	if (KNGetAppVersion(buf, sizeof buf)) {
+		lua_pushstring(script, buf);
+	}
+	else {
+		lua_pushnil(script);
+	}
+	
+	return 1;
+}
+
 int knGetAppSdk(lua_State *script) {
 	lua_pushinteger(script, KNGetAppSDK());
 	return 1;
@@ -77,6 +90,7 @@ int knInclude(lua_State *script) {
 
 int knEnableSystem(lua_State *script) {
 	knRegisterFunc(script, knGetShimVersion);
+	knRegisterFunc(script, knGetAppVersion);
 	knRegisterFunc(script, knGetAppSdk);
 	knRegisterFunc(script, knGetDeviceSdk);
 	knRegisterFunc(script, knGetInternalDataPath);
