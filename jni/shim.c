@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #define LEAF_IMPLEMENTATION
-#include "andrleaf.h"
+#include "extern/leaf.h"
 #undef LEAF_IMPLEMENTATION
 
 #include "util.h"

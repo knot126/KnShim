@@ -4,7 +4,7 @@
 #include <android_native_app_glue.h>
 #include <stdlib.h>
 #include <sys/mman.h>
-#include "andrleaf.h"
+#include "extern/leaf.h"
 
 #define TAG "smashshim"
 

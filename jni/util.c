@@ -6,7 +6,7 @@
 #include <string.h>
 #include <pthread.h>
 
-#include "andrleaf.h"
+#include "extern/leaf.h"
 #include "util.h"
 
 struct android_app *gApp;
@@ -143,7 +143,7 @@ int invert_branch(void *addr) {
 #define LH_AARCH64
 #endif
 #define LEAFHOOK_IMPLEMENTATION
-#include "leafhook.h"
+#include "extern/leafhook.h"
 
 LHHooker *gHooker;
 

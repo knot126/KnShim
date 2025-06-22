@@ -13,7 +13,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include "andrleaf.h"
+#include "extern/leaf.h"
 extern Leaf *gLeaf;
 
 static const luaL_Reg lualibs[] = {
