@@ -174,6 +174,30 @@ bool KNHookFunction(void *func, void *hook, void **orig) {
 	return success;
 }
 
+void *KNHookFunctionByName(const char *name, void *hook, bool replace) {
+	/**
+	 * Hook a function given it's name, the hook to use, and weather or not
+	 * to replace the function entirely or to return a pointer to the original.
+	 * If replace is false, then the original function pointer is returned on
+	 * success. If replace is true, then an invalid but non-NULL pointer is
+	 * return on success. On failure, both modes return NULL.
+	 */
+	
+	void *orig = (void *)(size_t)(-1);
+	
+	void *func = KNGetSymbolAddr(name);
+	
+	if (!func) {
+		return NULL;
+	}
+	
+	if (!KNHookFunction(func, hook, replace ? NULL : &orig)) {
+		return NULL;
+	}
+	
+	return orig;
+}
+
 bool KNLoadAsset(const char *path, void **data, size_t *size) {
 	/**
 	 * Load an asset, with a extra NUL byte at the end (not counted as part of

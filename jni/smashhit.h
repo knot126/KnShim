@@ -45,6 +45,10 @@ typedef struct QiInput_Event {
 	int y;
 } QiInput_Event;
 
+typedef struct QiAudioChannel {
+	/* Contents */
+} QiAudioChannel;
+
 // From Aladdin Enterprise's MD5 implemenation which Dennis uses.
 typedef unsigned char md5_byte_t; /* 8-bit byte */
 typedef unsigned int md5_word_t; /* 32-bit word */

@@ -17,6 +17,7 @@ void KNDatabaseInit(struct android_app *app, Leaf *leaf);
 #ifdef HYPERSPACE
 void KNOverlayInit(struct android_app *app, Leaf *leaf);
 #endif
+void KNAudioDebugInit(struct android_app *app, Leaf *leaf);
 
 ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitLua,
@@ -24,6 +25,7 @@ ModuleInitFunc gModuleInitFuncs[] = {
 #ifdef HYPERSPACE
 	KNOverlayInit,
 #endif
+	// KNAudioDebugInit,
 	NULL,
 };
 
