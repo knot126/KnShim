@@ -85,10 +85,10 @@ void KNOverlayInit(struct android_app *app, Leaf *leaf) {
 	Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
 	
 	// Hook res man load
-	KNHookFunction(KNGetSymbolAddr("_ZN17QiFileInputStream4openEPKc"), file_input_stream_open_hook, (void **) &QiFileInputStream_open);
+	QiFileInputStream_open = KNHookFunctionByName("_ZN17QiFileInputStream4openEPKc", file_input_stream_open_hook, false);
 	
 	// Hook player zero
-	KNHookFunction(KNGetSymbolAddr("_ZN6Player4zeroEv"), player_zero_hook, (void **) &Player_zero);
+	Player_zero = KNHookFunction("_ZN6Player4zeroEv", player_zero_hook, false);
 }
 
 bool mount_overlay(const char *path) {
