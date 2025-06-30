@@ -34,7 +34,7 @@ void (*Player_zero)(Player *this);
 int zrBalls = 25;
 int zrStreak = 0;
 
-FILE *KNLoadFromZIPOverlayInternal(mz_zip_archive *archive, const char *path, int *sizeout);
+bool KNLoadFromOverlay(QiFileInputStream *this, const char *path);
 
 bool file_input_stream_open_hook(QiFileInputStream *this, char *path) {
 	/**
@@ -43,27 +43,19 @@ bool file_input_stream_open_hook(QiFileInputStream *this, char *path) {
 	 */
 	
 	// Try loading from overlay first
-	FILE *fi = KNLoadFromZIPOverlayInternal(gZip, path, &this->length);
-	
-	if (fi) {
-		this->file = fi;
-		this->aasset = NULL; // ignored if null
-		this->headpos = 0;
-		return true;
-	}
-	
-	// Also try loading without .mp3 (this is really needed ig...)
-	char path_no_mp3[strlen(path)+1];
-	strcpy(path_no_mp3, path);
-	path_no_mp3[strlen(path)-4] = '\0';
-	
-	fi = KNLoadFromZIPOverlayInternal(gZip, path_no_mp3, &this->length);
-	
-	if (fi) {
-		this->file = fi;
-		this->aasset = NULL; // ignored if null
-		this->headpos = 0;
-		return true;
+	if (gZip) {
+		if (KNLoadFromOverlay(this, path)) {
+			return true;
+		}
+		
+		// Also try loading without .mp3 (this is really needed ig...)
+		char path_no_mp3[strlen(path)+1];
+		strcpy(path_no_mp3, path);
+		path_no_mp3[strlen(path)-4] = '\0';
+		
+		if (KNLoadFromOverlay(this, path_no_mp3)) {
+			return true;
+		}
 	}
 	
 	// Try real assets dir if that doesn't work
@@ -119,6 +111,8 @@ bool mount_overlay(const char *path) {
 		return false;
 	}
 	
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Overlay initialised: %s", path);
+	
 	return true;
 }
 
@@ -159,15 +153,18 @@ FILE *KNLoadFromZIPOverlayInternal(mz_zip_archive *archive, const char *path, in
 	}
 	else {
 		// Open an in-memory stream
-		FILE *file = fmemopen(NULL, size, "rb+");
+		// FILE *file = fmemopen(NULL, size, "rb+");
+		FILE *file = tmpfile();
 		
 		if (!file) {
+			__android_log_print(ANDROID_LOG_ERROR, TAG, "fmemopen failed: %s: %s", path, strerror(errno));
 			free(data);
 			return NULL;
 		}
 		
 		// Write data to buffer
 		if (fwrite(data, 1, size, file) != size) {
+			__android_log_print(ANDROID_LOG_ERROR, TAG, "fwrite failed: %s: %s", path, strerror(errno));
 			free(data);
 			return NULL;
 		}
@@ -189,6 +186,23 @@ FILE *KNLoadFromZIPOverlayInternal(mz_zip_archive *archive, const char *path, in
 		
 		return file;
 	}
+}
+
+bool KNLoadFromOverlay(QiFileInputStream *this, const char *path) {
+	int size = 0;
+	
+	FILE *fi = KNLoadFromZIPOverlayInternal(gZip, path, &size);
+	
+	if (fi) {
+		this->file = fi;
+		this->size = size;
+		this->position = 0;
+		this->androidAsset = NULL; // ignored if null
+		memset(&this->path, 0, sizeof this->path);
+		return true;
+	}
+	
+	return false;
 }
 
 int knMountOverlay(lua_State *script) {

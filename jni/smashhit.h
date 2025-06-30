@@ -38,6 +38,19 @@ typedef struct QiInput {
 	// unknown contents
 } QiInput;
 
+typedef uint32_t QiByteOrder;
+
+typedef struct QiFileInputStream {
+	void *vtable;
+	QiByteOrder byteOrder;
+	/* 4 byte padding on 64-bit */
+	FILE *file;
+	QiString path;
+	int size;
+	int position;
+	void *androidAsset;
+} QiFileInputStream;
+
 typedef struct QiInput_Event {
 	int type;
 	int data;
@@ -99,15 +112,6 @@ typedef struct Game {
 	// incomplete
 } Game;
 
-typedef struct QiFileInputStream {
-	char _unknown0[0xc];
-	FILE *file;
-	QiString path;
-	int length;
-	int headpos;
-	void *aasset;
-} QiFileInputStream;
-
 typedef struct QiFileOutputStream {
 	char _unknown0[0xc];
 	FILE *file;
@@ -146,15 +150,6 @@ typedef struct Game {
 	void *http_thread;
 	// incomplete
 } Game;
-
-typedef struct QiFileInputStream {
-	char _unknown0[0x10];
-	FILE *file;
-	QiString path;
-	int length;
-	int headpos;
-	void *aasset;
-} QiFileInputStream;
 
 typedef struct QiFileOutputStream {
 	char _unknown0[0x10];
