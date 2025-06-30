@@ -9,8 +9,8 @@ LOCAL_LDLIBS    := -ldl -llog -landroid
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
 
 # Uncomment these to enable hyperspace extensions
-# LOCAL_SRC_FILES += overlay.c extern/miniz.c
-# LOCAL_CFLAGS    += -DHYPERSPACE=1
+LOCAL_SRC_FILES += overlay.c extern/miniz.c
+LOCAL_CFLAGS    += -DHYPERSPACE=1
 
 include $(BUILD_SHARED_LIBRARY)
 

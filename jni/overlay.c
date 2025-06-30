@@ -88,7 +88,7 @@ void KNOverlayInit(struct android_app *app, Leaf *leaf) {
 	QiFileInputStream_open = KNHookFunctionByName("_ZN17QiFileInputStream4openEPKc", file_input_stream_open_hook, false);
 	
 	// Hook player zero
-	Player_zero = KNHookFunction("_ZN6Player4zeroEv", player_zero_hook, false);
+	Player_zero = KNHookFunctionByName("_ZN6Player4zeroEv", player_zero_hook, false);
 }
 
 bool mount_overlay(const char *path) {
