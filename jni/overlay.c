@@ -2,12 +2,6 @@
  * Load assets from ZIP files.
  */
 
-#ifdef HYPERSPACE
-
-#if __ANDROID_API__ < 23
-	#error Overlays require at least android API level 23
-#endif
-
 #include <android_native_app_glue.h>
 #include <android/log.h>
 #include <string.h>
@@ -72,15 +66,21 @@ void player_zero_hook(Player *this) {
 	this->streak = zrStreak;
 }
 
-void KNOverlayInit(struct android_app *app, Leaf *leaf) {
+void KNOverlayInit(void) {
 	// Needed for reloading templates
-	Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
+	if (!Game_loadTemplates) {
+		Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
+	}
 	
 	// Hook res man load
-	QiFileInputStream_open = KNHookFunctionByName("_ZN17QiFileInputStream4openEPKc", file_input_stream_open_hook, false);
+	if (!QiFileInputStream_open) {
+		QiFileInputStream_open = KNHookFunctionByName("_ZN17QiFileInputStream4openEPKc", file_input_stream_open_hook, false);
+	}
 	
 	// Hook player zero
-	Player_zero = KNHookFunctionByName("_ZN6Player4zeroEv", player_zero_hook, false);
+	if (!Player_zero) {
+		Player_zero = KNHookFunctionByName("_ZN6Player4zeroEv", player_zero_hook, false);
+	}
 }
 
 bool mount_overlay(const char *path) {
@@ -132,66 +132,55 @@ bool unmount_overlay(void) {
 	return true;
 }
 
-FILE *KNLoadFromZIPOverlayInternal(mz_zip_archive *archive, const char *path, int *sizeout) {
+static size_t KNOverlayWriteFileCallback(void *pOpaque, mz_uint64 file_ofs, const void *pBuf, size_t n) {
+	return fwrite(pBuf, 1, n, (FILE *) pOpaque);
+}
+
+FILE *KNExtractOverlayToTempfile(mz_zip_archive *archive, const char *path, size_t *size_out) {
 	/**
-	 * Load a file from the current overlay, if it exists.
-	 * 
-	 * TODO: In the future, copy data to the FILE* more efficently.
+	 * Extract a file from the current overlay to a tempfile and return the file
+	 * handle.
 	 */
 	
-	if (!archive) {
-		__android_log_print(ANDROID_LOG_ERROR, TAG, "Overlay is not mounted");
+	// Locate file by index
+	int fileIndex = mz_zip_reader_locate_file(archive, path, NULL, MZ_ZIP_FLAG_CASE_SENSITIVE);
+	
+	if (fileIndex == -1) {
 		return NULL;
 	}
 	
-	size_t size;
-	void *data = mz_zip_reader_extract_file_to_heap(archive, path, &size, 0);
+	// Get the uncompressed size of the file and write to size_out
+	mz_zip_archive_file_stat stat;
 	
-	if (!data) {
-		__android_log_print(ANDROID_LOG_ERROR, TAG, "miniz zip error: %s: %s", path, mz_zip_get_error_string(mz_zip_get_last_error(archive)));
+	if (!mz_zip_reader_file_stat(archive, fileIndex, &stat)) {
 		return NULL;
 	}
-	else {
-		// Open an in-memory stream
-		// FILE *file = fmemopen(NULL, size, "rb+");
-		FILE *file = tmpfile();
-		
-		if (!file) {
-			__android_log_print(ANDROID_LOG_ERROR, TAG, "fmemopen failed: %s: %s", path, strerror(errno));
-			free(data);
-			return NULL;
-		}
-		
-		// Write data to buffer
-		if (fwrite(data, 1, size, file) != size) {
-			__android_log_print(ANDROID_LOG_ERROR, TAG, "fwrite failed: %s: %s", path, strerror(errno));
-			free(data);
-			return NULL;
-		}
-		
-		free(data);
-		
-		// Seek back to start for reading
-		rewind(file);
-		
-		// Flush any changes to the stream
-		// Probably(?) not needed with fmemopen(), but we might use tmpfile() as
-		// a fallback in the future when the API level is too low to support
-		// fmemopen() or allocation fails.
-		fflush(file);
-		
-		*sizeout = size;
-		
-		__android_log_print(ANDROID_LOG_INFO, TAG, "loaded from overlay: %s (sz=%d, fp=%p)", path, size, file);
-		
-		return file;
+	
+	*size_out = stat.m_uncomp_size;
+	
+	// First make a tempfile
+	FILE *file = tmpfile();
+	
+	if (!file) {
+		return NULL;
 	}
+	
+	// Extract data
+	if (!mz_zip_reader_extract_to_callback(archive, fileIndex, KNOverlayWriteFileCallback, file, 0)) {
+		fclose(file);
+		return NULL;
+	}
+	
+	fflush(file);
+	rewind(file);
+	
+	return file;
 }
 
 bool KNLoadFromOverlay(QiFileInputStream *this, const char *path) {
-	int size = 0;
+	size_t size = 0;
 	
-	FILE *fi = KNLoadFromZIPOverlayInternal(gZip, path, &size);
+	FILE *fi = KNExtractOverlayToTempfile(gZip, path, &size);
 	
 	if (fi) {
 		this->file = fi;
@@ -199,13 +188,20 @@ bool KNLoadFromOverlay(QiFileInputStream *this, const char *path) {
 		this->position = 0;
 		this->androidAsset = NULL; // ignored if null
 		memset(&this->path, 0, sizeof this->path);
-		return true;
 	}
 	
-	return false;
+	return !!fi;
 }
 
+/**
+ * ============================================================================
+ * Lua functions
+ * ============================================================================
+ */
+
 int knMountOverlay(lua_State *script) {
+	KNOverlayInit();
+	
 	if (lua_gettop(script) < 1) {
 		return 0;
 	}
@@ -224,6 +220,8 @@ int knMountOverlay(lua_State *script) {
 }
 
 int knUnmountOverlay(lua_State *script) {
+	KNOverlayInit();
+	
 	lua_pushboolean(script, unmount_overlay());
 	
 	return 1;
@@ -235,6 +233,8 @@ static inline Game *get_game(void) {
 }
 
 int knLoadTemplates(lua_State *script) {
+	KNOverlayInit();
+	
 	Game *gGame = get_game();
 	
 	if (gGame) {
@@ -248,6 +248,8 @@ int knLoadTemplates(lua_State *script) {
 }
 
 int knSetPlayerZeroState(lua_State *script) {
+	KNOverlayInit();
+	
 	zrBalls = lua_tointeger(script, 1);
 	zrStreak = lua_tointeger(script, 2);
 	
@@ -262,4 +264,3 @@ int knEnableOverlay(lua_State *script) {
 	
 	return 0;
 }
-#endif // HYPERSPACE

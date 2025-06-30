@@ -20,40 +20,23 @@ int knEnableRegistry(lua_State *script);
 int knEnableDatabase(lua_State *script);
 int knEnableFile(lua_State *script);
 int knEnableGamectl(lua_State *script);
+int knEnableOverlay(lua_State *script);
 
 extern char *gAndroidInternalDataPath;
 extern char *gAndroidExternalDataPath;
 
 #ifndef HYPERSPACE
 int load_lua_libs(lua_State *script) {
-	// __android_log_print(ANDROID_LOG_INFO, TAG, "Hello from lua! Opening libs..");
-	
-	// Open default libs
 	luaL_openlibs(script);
-	
-	// Logging tools
 	knEnableLog(script);
-	
-	// Memory manipulation
 	knEnablePeekPoke(script);
-	
-	// HTTP
 	knEnableHttp(script);
-	
-	// System utilities
 	knEnableSystem(script);
-	
-	// Registry
 	knEnableRegistry(script);
-	
-	// Database
 	knEnableDatabase(script);
-	
-	// Better file reading and writing
 	knEnableFile(script);
-	
-	// Game control
 	knEnableGamectl(script);
+	knEnableOverlay(script);
 	
 	return 0;
 }
