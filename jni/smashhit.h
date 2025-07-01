@@ -30,15 +30,24 @@ typedef struct ResMan {
 	// unknown contents
 } ResMan;
 
+typedef uint32_t QiByteOrder;
+
+typedef struct QiOutputStreamVtable {
+	void *destruct;
+	void *destructWithFree;
+	void *flush;
+	void *writeInternal;
+} QiOutputStreamVtable;
+
 typedef struct QiOutputStream {
-	// unknown contents
+	QiOutputStreamVtable *vtable;
+	QiByteOrder byteOrder;
+	int position;
 } QiOutputStream;
 
 typedef struct QiInput {
 	// unknown contents
 } QiInput;
-
-typedef uint32_t QiByteOrder;
 
 typedef struct QiFileInputStream {
 	void *vtable;
@@ -99,7 +108,7 @@ typedef struct Game {
 	void *input;
 	void *display;
 	void *renderer;
-	void *resman;
+	ResMan *resman;
 	void *audio;
 	void *debug;
 	void *gfx;

@@ -98,11 +98,6 @@ int knRegDelete(lua_State *script) {
 	return 0;
 }
 
-int knRegCount(lua_State *script) {
-	lua_pushinteger(script, KH_DictLen(GetReg()));
-	return 1;
-}
-
 int knRegKeys(lua_State *script) {
 	lua_createtable(script, 0, 0);
 	
@@ -123,7 +118,6 @@ int knEnableRegistry(lua_State *script) {
 	lua_register(script, "knRegGet", knRegGet);
 	lua_register(script, "knRegHas", knRegHas);
 	lua_register(script, "knRegDelete", knRegDelete);
-	lua_register(script, "knRegCount", knRegCount);
 	lua_register(script, "knRegKeys", knRegKeys);
 	return 0;
 }

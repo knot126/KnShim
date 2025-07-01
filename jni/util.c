@@ -91,7 +91,7 @@ bool KNPatch(size_t vaddr, const char *bytes, size_t size) {
 	
 	char *addr = LeafGetRealAddr(gLeaf, vaddr);
 	
-	__android_log_print(ANDROID_LOG_INFO, TAG, "KNPatch: vaddr=%p bytes=%p size=%zu paddr=%p", vaddr, bytes, size, addr);
+	// __android_log_print(ANDROID_LOG_INFO, TAG, "KNPatch: vaddr=%p bytes=%p size=%zu paddr=%p", vaddr, bytes, size, addr);
 	
 	if (!addr) {
 		return false;
@@ -215,57 +215,6 @@ void *KNHookFunctionByName(const char *name, void *hook, bool replace) {
 	}
 	
 	return orig;
-}
-
-bool KNLoadAsset(const char *path, void **data, size_t *size) {
-	/**
-	 * Load an asset, with a extra NUL byte at the end (not counted as part of
-	 * length). Return true on success or false on failure. Size pointer is
-	 * optional.
-	 * 
-	 * You will need to free() the pointer returned in data if successful.
-	 */
-	
-	AAssetManager *asset_manager = gApp->activity->assetManager;
-	AAsset *asset = AAssetManager_open(asset_manager, path, AASSET_MODE_BUFFER);
-	
-	// Try again with .mp3 suffix
-	if (!asset) {
-		char path_mp3[strlen(path) + 5];
-		strcpy(path_mp3, path);
-		strcat(path_mp3, ".mp3");
-		asset = AAssetManager_open(asset_manager, path_mp3, AASSET_MODE_BUFFER);
-	}
-	
-	if (!asset) {
-		return false;
-	}
-	
-	size_t t_size = AAsset_getLength(asset);
-	const void *t_data = AAsset_getBuffer(asset);
-	
-	// Duplicate asset data with NUL at end
-	char *f_data = malloc(t_size + 1);
-	
-	if (!f_data) {
-		AAsset_close(asset);
-		return false;
-	}
-	
-	// Copy android's data buffer to ours
-	memcpy(f_data, t_data, t_size);
-	
-	// Set NUL at end
-	f_data[t_size] = '\0';
-	
-	// Write our results
-	*data = f_data;
-	if (size) { *size = t_size; }
-	
-	// Clean up
-	AAsset_close(asset);
-	
-	return true;
 }
 
 bool KNPreformInBackground(PthreadCallbackFunc func, void *arg) {
