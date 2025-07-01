@@ -230,10 +230,7 @@ int knListDir(lua_State *script) {
 		return 1;
 	}
 	
-	void (*sh_lua_createtable)(lua_State *, int, int) = KNGetSymbolAddr("lua_createtable");
-	void (*sh_lua_settable)(lua_State *, int) = KNGetSymbolAddr("lua_settable");
-	
-	sh_lua_createtable(script, 0, 0);
+	lua_createtable(script, 0, 0);
 	
 	size_t i = 1;
 	struct dirent *ent;
@@ -242,7 +239,7 @@ int knListDir(lua_State *script) {
 		if (strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
 			lua_pushinteger(script, i++);
 			lua_pushstring(script, ent->d_name);
-			sh_lua_settable(script, -3);
+			lua_settable(script, -3);
 		}
 	}
 	

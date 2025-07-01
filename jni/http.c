@@ -21,25 +21,16 @@ enum {
 	KN_HTTP_ERROR,
 };
 
-// Table functions - these should probably be split out, or better yet load lua
-// dynamically from Smash Hit.
-int (*sh_luaL_newmetatable)(lua_State *L, const char *tname);
-void *(*sh_lua_settable)(lua_State *L, int index);
-void (*sh_lua_setmetatable)(lua_State *L, int index);
-int (*sh_lua_next)(lua_State *L, int index);
-size_t (*sh_lua_objlen)(lua_State *L, int index);
-void (*sh_lua_pushvalue)(lua_State *L, int index);
-
 int knHttpRelease(lua_State *script);
 
 int knHttpRequest_addmetatable(lua_State *script) {
-	if (sh_luaL_newmetatable(script, "knHttpContext")) {
+	if (luaL_newmetatable(script, "knHttpContext")) {
 		lua_pushstring(script, "__gc");
 		lua_pushcfunction(script, knHttpRelease);
-		sh_lua_settable(script, -3);
+		lua_settable(script, -3);
 	}
 	
-	sh_lua_setmetatable(script, -2);
+	lua_setmetatable(script, -2);
 	
 	return 0;
 }
@@ -53,7 +44,7 @@ size_t seqenceLength(lua_State *L, int t) {
 	
 	size_t i;
 	
-	for (i = 0; sh_lua_next(L, t); i++) {
+	for (i = 0; lua_next(L, t); i++) {
 		lua_pop(L, 1);
 	}
 	
@@ -62,7 +53,7 @@ size_t seqenceLength(lua_State *L, int t) {
 
 size_t fillHeaders(lua_State *L, int t, http_header_t *headers, size_t count) {
 	// Push a copy of the table for reference purposes
-	sh_lua_pushvalue(L, t);
+	lua_pushvalue(L, t);
 	
 	// First key (dummy)
 	lua_pushnil(L);
@@ -70,9 +61,9 @@ size_t fillHeaders(lua_State *L, int t, http_header_t *headers, size_t count) {
 	// Iterate keys
 	size_t i;
 	
-	for (i = 0; sh_lua_next(L, -2) && i < count; i++) {
+	for (i = 0; lua_next(L, -2) && i < count; i++) {
 		// Push a temp copy of the key so we can safely tostring() it.
-		sh_lua_pushvalue(L, -2);
+		lua_pushvalue(L, -2);
 		
 		// Copy to header table
 		headers[i].name = lua_tostring(L, -1);
@@ -438,13 +429,6 @@ int knEnableHttp(lua_State *script) {
 	lua_pushinteger(script, KN_HTTP_PENDING); lua_setglobal(script, "KN_HTTP_PENDING");
 	lua_pushinteger(script, KN_HTTP_DONE); lua_setglobal(script, "KN_HTTP_DONE");
 	lua_pushinteger(script, KN_HTTP_ERROR); lua_setglobal(script, "KN_HTTP_ERROR");
-	
-	sh_luaL_newmetatable = KNGetSymbolAddr("luaL_newmetatable");
-	sh_lua_settable = KNGetSymbolAddr("lua_settable");
-	sh_lua_setmetatable = KNGetSymbolAddr("lua_setmetatable");
-	sh_lua_next = KNGetSymbolAddr("lua_next");
-	sh_lua_objlen = KNGetSymbolAddr("lua_objlen");
-	sh_lua_pushvalue = KNGetSymbolAddr("lua_pushvalue");
 	
 	return 0;
 }

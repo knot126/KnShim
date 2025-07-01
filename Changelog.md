@@ -10,6 +10,7 @@
 * HTTP API now supporting headers and non-`GET`/`POST` methods
 * Fixed using tables in `knInclude()`'d scripts leading to memory corruption
 * Added `knPatch()`, deprecated `knPeek()` and `knPoke()`
+* KnShim now uses the version of Lua from Smash Hit instead of including its own
 * Overlays have been made available for general use
 * Upgrade Leaf
 * New project logo

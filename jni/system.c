@@ -50,9 +50,6 @@ int knGetExternalDataPath(lua_State *script) {
 	return 1;
 }
 
-int (*shluaL_loadstring)(lua_State *L, const char *s);
-int (*shlua_pcall)(lua_State *L, int nargs, int nresults, int errfunc);
-
 int knInclude(lua_State *script) {
 	/**
 	 * Include a lua script from the APK assets directory.
@@ -68,9 +65,7 @@ int knInclude(lua_State *script) {
 	bool success = KNLoadAsset(path, (void**)&data, NULL);
 	
 	if (success) {
-		// Trying to use the SH one because I think tables are getting fucked.
-		// int lerror = luaL_dostring(script, data);
-		int lerror = (shluaL_loadstring(script, data) || shlua_pcall(script, 0, LUA_MULTRET, 0));
+		int lerror = (luaL_loadstring(script, data) || lua_pcall(script, 0, LUA_MULTRET, 0));
 		
 		free(data);
 		
@@ -96,9 +91,6 @@ int knEnableSystem(lua_State *script) {
 	knRegisterFunc(script, knGetInternalDataPath);
 	knRegisterFunc(script, knGetExternalDataPath);
 	knRegisterFunc(script, knInclude);
-	
-	shluaL_loadstring = KNGetSymbolAddr("luaL_loadstring");
-	shlua_pcall = KNGetSymbolAddr("lua_pcall");
 	
 	return 0;
 }
