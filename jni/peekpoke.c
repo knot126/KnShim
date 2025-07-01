@@ -1,3 +1,8 @@
+/**
+ * Generic memory reading/writing/patching utils. Most of the stuff here is very
+ * old and in need of updating to fix serious bugs.
+ */
+
 #include <android_native_app_glue.h>
 #include <android/log.h>
 #include <dlfcn.h>
@@ -193,12 +198,32 @@ int knInvertBranch(lua_State *script) {
 }
 // END MEMORY
 
+int knPatch(lua_State *script) {
+	/**
+	 * (bool) success = knPatch((int) vaddr, (string) data)
+	 */
+	
+	if (lua_gettop(script) < 2) {
+		lua_pushboolean(script, 0);
+		return 1;
+	}
+	
+	size_t vaddr = lua_tointeger(script, 1);
+	
+	size_t size;
+	const char *data = lua_tolstring(script, 2, &size);
+	
+	lua_pushboolean(script, data && KNPatch(vaddr, data, size));
+	return 1;
+}
+
 int knEnablePeekPoke(lua_State *script) {
 	lua_register(script, "knSymbolAddr", knSymbolAddr);
 	lua_register(script, "knPeek", knPeek);
 	lua_register(script, "knPoke", knPoke);
 	lua_register(script, "knSystemAbi", knSystemAbi);
 	lua_register(script, "knInvertBranch", knInvertBranch);
+	knRegisterFunc(script, knPatch);
 	
 	// Types
 	knLuaPushEnum(script, KN_TYPE_ADDR);

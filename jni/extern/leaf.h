@@ -135,6 +135,7 @@ const char *LeafLoadFromBuffer(Leaf *self, void *contents, size_t length);
 const char *LeafLoadFromFile(Leaf *self, const char *path);
 void *LeafSymbolAddr(Leaf *self, const char *symbol_name);
 LeafSym *LeafSymbolInfo(Leaf *self, const char *symbol_name);
+void *LeafGetRealAddr(Leaf *self, size_t virt_addr);
 void LeafFree(Leaf *self);
 
 #ifdef LEAF_IMPLEMENTATION
@@ -304,7 +305,7 @@ static void *LeafMakeMap(size_t size, size_t alignment) {
 
 #define LEAF_IN_RANGE(A, X, B) ((X >= A) && (X < B))
 
-static void *LeafGetRealAddr(Leaf *self, size_t virt_addr) {
+void *LeafGetRealAddr(Leaf *self, size_t virt_addr) {
 	/**
 	 * Get the loaded address for a given virtual address in the binary.
 	 */

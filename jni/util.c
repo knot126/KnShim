@@ -83,6 +83,25 @@ void *KNGetSymbolAddr(const char *name) {
 	return LeafSymbolAddr(gLeaf, name);
 }
 
+bool KNPatch(size_t vaddr, const char *bytes, size_t size) {
+	/**
+	 * Patch the bytes starting at the virtual address vaddr by replacing them
+	 * with `size` bytes from `bytes`
+	 */
+	
+	char *addr = LeafGetRealAddr(gLeaf, vaddr);
+	
+	__android_log_print(ANDROID_LOG_INFO, TAG, "KNPatch: vaddr=%p bytes=%p size=%zu paddr=%p", vaddr, bytes, size, addr);
+	
+	if (!addr) {
+		return false;
+	}
+	
+	memcpy(addr, bytes, size);
+	
+	return true;
+}
+
 int invert_branch(void *addr) {
 	/**
 	 * Invert the branch at the given address.
