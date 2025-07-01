@@ -26,8 +26,20 @@ extern char *gAndroidInternalDataPath;
 extern char *gAndroidExternalDataPath;
 
 #ifndef HYPERSPACE
+
+#define LOAD_CORE_LIB(L, NAME, FUNC) lua_pushcfunction(L, FUNC); lua_pushstring(L, NAME); lua_call(L, 1, 0);
+
 int load_lua_libs(lua_State *script) {
-	luaL_openlibs(script);
+	// Load core libs manually so all of them are loaded
+	LOAD_CORE_LIB(script, LUA_LOADLIBNAME, luaopen_package);
+	LOAD_CORE_LIB(script, LUA_TABLIBNAME, luaopen_table);
+	LOAD_CORE_LIB(script, LUA_IOLIBNAME, luaopen_io);
+	LOAD_CORE_LIB(script, LUA_OSLIBNAME, luaopen_os);
+	LOAD_CORE_LIB(script, LUA_STRLIBNAME, luaopen_string);
+	LOAD_CORE_LIB(script, LUA_MATHLIBNAME, luaopen_math);
+	LOAD_CORE_LIB(script, LUA_DBLIBNAME, luaopen_debug);
+	
+	// Load KnShim extensions
 	knEnableLog(script);
 	knEnablePeekPoke(script);
 	knEnableHttp(script);
@@ -41,8 +53,11 @@ int load_lua_libs(lua_State *script) {
 	return 0;
 }
 
+void KNLoadLua(void);
+
 void KNInitLua(struct android_app *app, Leaf *leaf) {
 	// Install the Lua extensions
+	KNLoadLua();
 	
 	// By some luck ARM32 and ARM64 only differ by the pointer size here - the
 	// lua_openlibs reg table is the same offset from this symbol aside from that!

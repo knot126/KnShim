@@ -9,7 +9,10 @@
 * Fix a bug where the game would crash if using `knHttpRelease()` explicitly
 * HTTP API now supporting headers and non-`GET`/`POST` methods
 * Fixed using tables in `knInclude()`'d scripts leading to memory corruption
+* Added `knPatch()`, deprecated `knPeek()` and `knPoke()`
+* Overlays have been made available for general use
 * Upgrade Leaf
+* New project logo
 
 ## Release 12
 
