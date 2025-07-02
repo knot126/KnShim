@@ -52,7 +52,7 @@ typedef struct QiInput {
 typedef struct QiFileInputStream {
 	void *vtable;
 	QiByteOrder byteOrder;
-	/* 4 byte padding on 64-bit */
+	int _unk;
 	FILE *file;
 	QiString path;
 	int size;

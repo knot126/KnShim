@@ -72,7 +72,7 @@ void KNOverlayInit(void) {
 		Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
 	}
 	
-	// Hook res man load
+	// Hook file input stream open
 	if (!QiFileInputStream_open) {
 		QiFileInputStream_open = KNHookFunctionByName("_ZN17QiFileInputStream4openEPKc", file_input_stream_open_hook, false);
 	}
