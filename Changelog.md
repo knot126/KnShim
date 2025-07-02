@@ -6,6 +6,7 @@
 * Added `knJavaCommand()` for calling smash hit's java commands from lua
 * Added `knGetDeviceHz()` and `knSetFrameRate()`
 * Removed `knEnableReloading`; you can now just `knReload()` without enabling it
+* Changed `knLoadAsset()` to use Smash Hit's resource manager
 * Fix a bug where the game would crash if using `knHttpRelease()` explicitly
 * HTTP API now supporting headers and non-`GET`/`POST` methods
 * Fixed using tables in `knInclude()`'d scripts leading to memory corruption
