@@ -2,16 +2,21 @@
 
 ## Release 13 (next version)
 
-* Added `knGetAppSdk()` for getting the app's target SDK, `knGetDeviceSdk()` for getting the device's android version (sdk level), and `knGetAppVersion()` for getting the app's version string
-* Added `knJavaCommand()` for calling smash hit's java commands from lua
-* Added `knGetDeviceHz()` and `knSetFrameRate()`
-* Removed `knEnableReloading`; you can now just `knReload()` without enabling it
-* Changed `knLoadAsset()` to use Smash Hit's resource manager
-* Fix a bug where the game would crash if using `knHttpRelease()` explicitly
-* HTTP API now supporting headers and non-`GET`/`POST` methods
-* Fixed using tables in `knInclude()`'d scripts leading to memory corruption
-* Added `knPatch()`, deprecated `knPeek()` and `knPoke()`
 * KnShim now uses the version of Lua from Smash Hit instead of including its own
+  * This fixed various bugs, including tables being used in `knInclude()`'d scripts leading to memory corruption
+* Added functions:
+  * `knGetAppSdk()` for getting the app's target SDK
+  * `knGetDeviceSdk()` for getting the device's android version (sdk level)
+  * `knGetAppVersion()` for getting the app's version string
+  * `knJavaCommand()` for calling smash hit's java commands from lua
+  * `knGetDeviceHz()` and `knSetFrameRate()` for adjusting the game's framerate
+  * `knPatch()` for more easily making patches at runtime
+* Changed `knLoadAsset()` and `knInclude()` to use Smash Hit's resource manager
+  * This means you can no longer explicitly specify `.mp3` at the end of file names
+* HTTP API now supporting headers and non-`GET`/`POST` methods
+* Removed `knEnableReloading`; you can now just `knReload()` without enabling it
+* Deprecated `knPeek()` and `knPoke()`, use `knPatch()` now
+* Fix a bug where the game would crash if using `knHttpRelease()` explicitly
 * Overlays have been made available for general use
 * Upgrade Leaf
 * New project logo
