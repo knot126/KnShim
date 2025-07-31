@@ -39,6 +39,12 @@ int load_lua_libs(lua_State *script) {
 	LOAD_CORE_LIB(script, LUA_MATHLIBNAME, luaopen_math);
 	LOAD_CORE_LIB(script, LUA_DBLIBNAME, luaopen_debug);
 	
+#ifndef KN_DONT_PREFORM_RUNTIME_LIBRARY_NAME_CHECK_OR_ELSE_ILL_EAT_YOUR_BALLS_YOU_BLOODY_COCK
+	if (gIsOwnLibraryAvailable) {
+		return 0;
+	}
+#endif
+	
 	// Load KnShim extensions
 	knEnableLog(script);
 	knEnablePeekPoke(script);

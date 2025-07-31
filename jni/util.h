@@ -28,11 +28,14 @@ extern Leaf *gLeaf;
 extern struct android_app *gApp;
 extern void *gLibAndroid;
 extern void *gLibC;
+extern bool gIsOwnLibraryAvailable;
 
 typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
 typedef void *(*PthreadCallbackFunc)(void *arg);
 
 bool KNInit(void);
+
+bool KNIsOwnLibraryAvailable(void);
 
 int KNGetDeviceSDK(void);
 int KNGetAppSDK(void);
