@@ -95,7 +95,10 @@ bool KNLoadAsset(const char *path, void **data, size_t *size) {
 	
 	ResMan *gResMan = (*(Game **) KNGetSymbolAddr("gGame"))->resman;
 	
-	QiString qPath = {.data = (char *)path, .length = strlen(path)};
+	QiString qPath = {
+		.data = (char *)path,
+		.length = strlen(path),
+	};
 	
 	KnMemoryOutputStream os;
 	KnMemoryOutputStream_init(&os);
@@ -109,49 +112,5 @@ bool KNLoadAsset(const char *path, void **data, size_t *size) {
 		KnMemoryOutputStream_release(&os);
 	}
 	
-	// __android_log_print(ANDROID_LOG_INFO, TAG, "KNLoadAsset(%s, %p, %p) = %s", path, data, size, status ? "true" : "false");
-	
 	return status;
-#if 0
-	AAssetManager *asset_manager = gApp->activity->assetManager;
-	AAsset *asset = AAssetManager_open(asset_manager, path, AASSET_MODE_BUFFER);
-	
-	// Try again with .mp3 suffix
-	if (!asset) {
-		char path_mp3[strlen(path) + 5];
-		strcpy(path_mp3, path);
-		strcat(path_mp3, ".mp3");
-		asset = AAssetManager_open(asset_manager, path_mp3, AASSET_MODE_BUFFER);
-	}
-	
-	if (!asset) {
-		return false;
-	}
-	
-	size_t t_size = AAsset_getLength(asset);
-	const void *t_data = AAsset_getBuffer(asset);
-	
-	// Duplicate asset data with NUL at end
-	char *f_data = malloc(t_size + 1);
-	
-	if (!f_data) {
-		AAsset_close(asset);
-		return false;
-	}
-	
-	// Copy android's data buffer to ours
-	memcpy(f_data, t_data, t_size);
-	
-	// Set NUL at end
-	f_data[t_size] = '\0';
-	
-	// Write our results
-	*data = f_data;
-	if (size) { *size = t_size; }
-	
-	// Clean up
-	AAsset_close(asset);
-	
-	return true;
-#endif
 }

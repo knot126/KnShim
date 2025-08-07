@@ -142,14 +142,12 @@ FILE *KNExtractOverlayToTempfile(mz_zip_archive *archive, const char *path, size
 	 * handle.
 	 */
 	
-	// Locate file by index
 	int fileIndex = mz_zip_reader_locate_file(archive, path, NULL, MZ_ZIP_FLAG_CASE_SENSITIVE);
 	
 	if (fileIndex == -1) {
 		return NULL;
 	}
 	
-	// Get the uncompressed size of the file and write to size_out
 	mz_zip_archive_file_stat stat;
 	
 	if (!mz_zip_reader_file_stat(archive, fileIndex, &stat)) {
@@ -158,7 +156,10 @@ FILE *KNExtractOverlayToTempfile(mz_zip_archive *archive, const char *path, size
 	
 	*size_out = stat.m_uncomp_size;
 	
-	// First make a tempfile
+	// TODO: Perhaps we should switch to using memfd_create()? fmemopen() just
+	// doesn't work, but perhaps this would since it creates a real file
+	// descriptor.
+	// SEE: https://www.man7.org/linux/man-pages/man2/memfd_create.2.html
 	FILE *file = tmpfile();
 	
 	if (!file) {
