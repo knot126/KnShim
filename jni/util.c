@@ -16,20 +16,6 @@ Leaf *gLeaf;
 void *gLibAndroid;
 void *gLibC;
 
-bool gIsOwnLibraryAvailable;
-
-bool KNIsOwnLibraryAvailable(void) {
-	void *handle;
-	
-	if ((handle = dlopen("libshim.so", RTLD_NOW | RTLD_GLOBAL))) {
-		dlclose(handle);
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
 bool KNInit(void) {
 	/**
 	 * Initialise some core stuff the shim needs

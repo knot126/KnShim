@@ -14,12 +14,10 @@ typedef void (*AndroidMainFunc)(struct android_app *app);
 
 void KNInitLua(struct android_app *app, Leaf *leaf);
 void KNDatabaseInit(struct android_app *app, Leaf *leaf);
-void KNFunInit(struct android_app *app, Leaf *leaf);
 
 ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitLua,
 	KNDatabaseInit,
-	KNFunInit,
 	NULL,
 };
 
