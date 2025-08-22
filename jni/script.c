@@ -13,7 +13,7 @@
 #include "util.h"
 
 int knEnableLog(lua_State *script);
-int knEnablePeekPoke(lua_State *script);
+int knEnablePatching(lua_State *script);
 int knEnableHttp(lua_State *script);
 int knEnableSystem(lua_State *script);
 int knEnableRegistry(lua_State *script);
@@ -39,7 +39,7 @@ int load_lua_libs(lua_State *script) {
 	
 	// Load KnShim extensions
 	knEnableLog(script);
-	knEnablePeekPoke(script);
+	knEnablePatching(script);
 	knEnableHttp(script);
 	knEnableSystem(script);
 	knEnableRegistry(script);
