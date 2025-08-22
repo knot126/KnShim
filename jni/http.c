@@ -40,10 +40,6 @@ static size_t seqenceLength(lua_State *L, int t) {
 	 * Get the length of a table, even if its not array like
 	 */
 	
-	if (lua_isnoneornil(L, t)) {
-		return 0;
-	}
-	
 	lua_pushnil(L);
 	
 	size_t i;
@@ -121,26 +117,41 @@ int knHttpRequest(lua_State *script) {
 		return 1;
 	}
 	
-	// method
-	const char *method = lua_tostring(script, 1);
+	int top = lua_gettop(script);
 	
-	// url
-	url = lua_tostring(script, 2);
+	http_t *request;
 	
-	// body
-	size_t size = 0;
-	const char *body = lua_tolstring(script, 3, &size);
-	
-	// headers
-	size_t num_headers = seqenceLength(script, 4);
-	http_header_t headers[num_headers];
-	
-	// Handle headers (or dont)
-	if (num_headers) {
-		fillHeaders(script, 4, headers, num_headers);
+#if 0
+	if (top == 1) {
+		request = http_request("GET", url, NULL, 0, NULL, 0, NULL);
 	}
-	
-	http_t *request = http_request(method, url, body, size, num_headers ? headers : NULL, num_headers, NULL);
+	else if (top == 2) {
+		size_t size = 0;
+		const char *body = lua_tolstring(script, 2, &size);
+		
+		request = http_request("POST", url, body, size, NULL, 0, NULL);
+	}
+	else {
+#endif
+		const char *method = lua_tostring(script, 1);
+		url = lua_tostring(script, 2);
+		
+		size_t size = 0;
+		const char *body = lua_tolstring(script, 3, &size);
+		
+		// Handle headers (or dont)
+		if (lua_istable(script, 4)) {
+			size_t num_headers = seqenceLength(script, 4);
+			http_header_t headers[num_headers];
+			
+			fillHeaders(script, 4, headers, num_headers);
+			
+			request = http_request(method, url, body, size, headers, num_headers, NULL);
+		}
+		else {
+			request = http_request(method, url, body, size, NULL, 0, NULL);
+		}
+	// }
 	
 	if (!request) {
 		lua_pushnil(script);
