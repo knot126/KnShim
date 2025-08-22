@@ -25,8 +25,6 @@ int knEnableOverlay(lua_State *script);
 extern char *gAndroidInternalDataPath;
 extern char *gAndroidExternalDataPath;
 
-#ifndef HYPERSPACE
-
 #define LOAD_CORE_LIB(L, NAME, FUNC) lua_pushcfunction(L, FUNC); lua_pushstring(L, NAME); lua_call(L, 1, 0);
 
 int load_lua_libs(lua_State *script) {
@@ -80,42 +78,3 @@ void KNInitLua(struct android_app *app, Leaf *leaf) {
 	gAndroidInternalDataPath = strdup(app->activity->internalDataPath);
 	gAndroidExternalDataPath = strdup(app->activity->externalDataPath);
 }
-
-#else
-
-int knEnableOverlay(lua_State *script);
-
-void (*real_script_load_func)(Script *this, QiString *path);
-
-static void script_load_hook(Script *this, QiString *path) {
-	real_script_load_func(this, path);
-	
-	const char *path_string = path->data ? path->data : path->cached;
-	lua_State *script = *this->script->state;
-	
-	__android_log_print(ANDROID_LOG_INFO, TAG, "Loading script %s...", path_string);
-	
-	if (!strcmp(path_string, "menu/main.lua")) {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "Injecting functions into %s", path_string);
-		
-		luaL_openlibs(script);
-		knEnableLog(script);
-		knEnablePeekPoke(script);
-		knEnableHttp(script);
-		knEnableSystem(script);
-		knEnableRegistry(script);
-		knEnableDatabase(script);
-		knEnableFile(script);
-		knEnableGamectl(script);
-		knEnableOverlay(script);
-	}
-}
-
-void KNInitLua(struct android_app *app, Leaf *leaf) {
-	// Install the lua extensions, but only for menu and hud scripts
-	KNHookFunction(KNGetSymbolAddr("_ZN6Script4loadERK8QiString"), &script_load_hook, (void *) &real_script_load_func);
-	
-	// Set internal and external data paths
-	gAndroidInternalDataPath = strdup(app->activity->internalDataPath);
-}
-#endif

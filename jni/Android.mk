@@ -8,9 +8,6 @@ LOCAL_SRC_FILES := util.c asset.c shim.c script.c log.c peekpoke.c http.c system
 LOCAL_LDLIBS    := -ldl -llog -landroid
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
 
-# Uncomment these to use hyperspace's script isolaton
-# LOCAL_CFLAGS    += -DHYPERSPACE=1
-
 include $(BUILD_SHARED_LIBRARY)
 
 $(call import-module,android/native_app_glue)
