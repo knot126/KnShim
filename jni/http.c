@@ -122,11 +122,9 @@ int knHttpRequest(lua_State *script) {
 	http_t *request;
 	
 	if (top == 1) {
-		__android_log_print(ANDROID_LOG_WARN, "smashhit", "Legacy http API (GET)");
 		request = http_request("GET", url, NULL, 0, NULL, 0, NULL);
 	}
 	else if (top == 2) {
-		__android_log_print(ANDROID_LOG_WARN, "smashhit", "Legacy http API (POST)");
 		size_t size = 0;
 		const char *body = lua_tolstring(script, 2, &size);
 		
@@ -144,15 +142,11 @@ int knHttpRequest(lua_State *script) {
 			size_t num_headers = seqenceLength(script, 4);
 			http_header_t headers[num_headers];
 			
-			__android_log_print(ANDROID_LOG_INFO, "smashhit", "Write %zu http headers", num_headers);
-			
 			fillHeaders(script, 4, headers, num_headers);
 			
 			request = http_request(method, url, body, size, headers, num_headers, NULL);
 		}
 		else {
-			__android_log_print(ANDROID_LOG_INFO, "smashhit", "No headers");
-			
 			request = http_request(method, url, body, size, NULL, 0, NULL);
 		}
 	}

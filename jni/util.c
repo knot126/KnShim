@@ -91,7 +91,7 @@ bool KNPatch(size_t vaddr, const char *bytes, size_t size) {
 	
 	char *addr = LeafGetRealAddr(gLeaf, vaddr);
 	
-	// __android_log_print(ANDROID_LOG_INFO, TAG, "KNPatch: vaddr=%p bytes=%p size=%zu paddr=%p", vaddr, bytes, size, addr);
+	// LogI("KNPatch: vaddr=%p bytes=%p size=%zu paddr=%p", vaddr, bytes, size, addr);
 	
 	if (!addr) {
 		return false;
@@ -179,7 +179,7 @@ bool KNHookFunction(void *func, void *hook, void **orig) {
 		success = KNHookInit();
 		
 		if (!success) {
-			__android_log_print(ANDROID_LOG_ERROR, TAG, "Could not init leafhook hooker");
+			LogE("Could not init leafhook hooker");
 			return success;
 		}
 	}
@@ -187,7 +187,7 @@ bool KNHookFunction(void *func, void *hook, void **orig) {
 	success = LHHookerHookFunction(gHooker, func, hook, orig);
 	
 	if (!success) {
-		__android_log_print(ANDROID_LOG_ERROR, TAG, "Error hooking function!");
+		LogE("Error hooking function!");
 	}
 	
 	return success;
@@ -239,7 +239,7 @@ bool KNPreformInBackground(PthreadCallbackFunc func, void *arg) {
 #define JNI_EXCEPTION_ABORT(JNI, ...) {\
 	if ((*JNI)->ExceptionCheck(JNI) == JNI_TRUE) {\
 		(*JNI)->ExceptionDescribe(JNI);\
-		__android_log_print(ANDROID_LOG_FATAL, TAG, __VA_ARGS__);\
+		LogF(__VA_ARGS__);\
 		abort();\
 	}\
 }
@@ -278,7 +278,7 @@ float KNGetRefreshRate(void) {
 	JNIEnv *jni = NULL;
 	
 	if ((*vm)->GetEnv(vm, (void **)&jni, JNI_VERSION_1_6) != JNI_OK) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "JNI not okay, go fuck yourself :)");
+		LogF("JNI not okay, go fuck yourself :)");
 		abort();
 	}
 	
@@ -325,7 +325,7 @@ bool KNGetAppVersion(char *buffer, size_t maxSize) {
 	JNIEnv *jni = NULL;
 	
 	if ((*vm)->GetEnv(vm, (void **)&jni, JNI_VERSION_1_6) != JNI_OK) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "JNI not okay, go fuck yourself :)");
+		LogF("JNI not okay, go fuck yourself :)");
 		abort();
 	}
 	

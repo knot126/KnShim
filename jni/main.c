@@ -42,22 +42,22 @@ void android_main(struct android_app *app) {
 	gApp = app;
 	
 	if (!KNInit()) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Early shim init failed");
+		LogF("Early shim init failed");
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "Early shim successful, app sdk = %d, device sdk = %d", KNGetAppSDK(), KNGetDeviceSDK());
+		LogI("Early shim successful, app sdk = %d, device sdk = %d", KNGetAppSDK(), KNGetDeviceSDK());
 	}
 	
 	// Create an instance of Leaf for loading the main binary
 	gLeaf = LeafInit();
 	
 	if (!gLeaf) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Leaf init failed");
+		LogF("Leaf init failed");
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "Leaf initialised");
+		LogI("Leaf initialised");
 	}
 	
 	// Load the contents of LSH
@@ -66,22 +66,22 @@ void android_main(struct android_app *app) {
 	AAsset *asset = load_libsmashhit(app, &data, &length);
 	
 	if (!asset) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Failed to load libsmashhit.so from shim native dir");
+		LogF("Failed to load libsmashhit.so from shim native dir");
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "Loaded libsmashhit.so from native directory");
+		LogI("Loaded libsmashhit.so from native directory");
 	}
 	
 	// Load from the buffer we just read
 	const char *error = LeafLoadFromBuffer(gLeaf, (void *) data, length);
 	
 	if (error) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Leaf loading elf failed: %s", error);
+		LogF("Leaf loading elf failed: %s", error);
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "Loading elf succeeded");
+		LogI("Loading elf succeeded");
 	}
 	
 	// Close asset handle, not needed anymore
@@ -92,7 +92,7 @@ void android_main(struct android_app *app) {
 		const char *status = (gModuleInitFuncs[i])();
 		
 		if (status) {
-			LogE("KnShim module at index %i failed to load: %s", i, status);
+			LogE("KnShim module at index %zu failed to load: %s", i, status);
 			return;
 		}
 	}
@@ -101,11 +101,11 @@ void android_main(struct android_app *app) {
 	AndroidMainFunc func = LeafSymbolAddr(gLeaf, "android_main");
 	
 	if (!func) {
-		__android_log_print(ANDROID_LOG_FATAL, TAG, "Could not find android_main()");
+		LogF("Could not find android_main()");
 		return;
 	}
 	else {
-		__android_log_print(ANDROID_LOG_INFO, TAG, "Found android_main() at %p", func);
+		LogI("Found android_main() at %p", func);
 	}
 	
 	func(app);

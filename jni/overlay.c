@@ -90,7 +90,7 @@ bool mount_overlay(const char *path) {
 	 */
 	
 	if (gZip) {
-		__android_log_print(ANDROID_LOG_ERROR, TAG, "Overlay is already mounted");
+		LogE("Overlay is already mounted");
 		return false;
 	}
 	
@@ -98,7 +98,7 @@ bool mount_overlay(const char *path) {
 	gZip = malloc(sizeof *gZip);
 	
 	if (!gZip) {
-		__android_log_print(ANDROID_LOG_ERROR, TAG, "Could not allocate for zip reader");
+		LogE("Could not allocate for zip reader");
 		return false;
 	}
 	
@@ -111,7 +111,7 @@ bool mount_overlay(const char *path) {
 		return false;
 	}
 	
-	__android_log_print(ANDROID_LOG_INFO, TAG, "Overlay initialised: %s", path);
+	LogI("Overlay initialised: %s", path);
 	
 	return true;
 }
@@ -242,7 +242,7 @@ int knLoadTemplates(lua_State *script) {
 		Game_loadTemplates(gGame);
 	}
 	else {
-		__android_log_print(ANDROID_LOG_WARN, TAG, "gGame is null");
+		LogW("gGame is null");
 	}
 	
 	return 0;

@@ -30,7 +30,7 @@ extern struct android_app *gApp;
 extern void *gLibAndroid;
 extern void *gLibC;
 
-typedef int (*ModuleInitFunc)(void);
+typedef const char *(*ModuleInitFunc)(void);
 typedef void *(*PthreadCallbackFunc)(void *arg);
 
 bool KNInit(void);
