@@ -6,7 +6,7 @@
 #include <sys/mman.h>
 #include "extern/leaf.h"
 
-#define TAG "smashshim"
+#define TAG "knshim"
 
 #if defined(__arm__)
 #define KN_ARCH_STRING "armeabi-v7a"
@@ -26,10 +26,11 @@ typedef uint8_t shortop_t;
 
 extern Leaf *gLeaf;
 extern struct android_app *gApp;
+
 extern void *gLibAndroid;
 extern void *gLibC;
 
-typedef void (*ModuleInitFunc)(struct android_app *app, Leaf *leaf);
+typedef int (*ModuleInitFunc)(void);
 typedef void *(*PthreadCallbackFunc)(void *arg);
 
 bool KNInit(void);
@@ -44,6 +45,7 @@ int invert_branch(void *addr);
 bool KNHookFunction(void *func, void *hook, void **orig);
 void *KNHookFunctionByName(const char *name, void *hook, bool replace);
 bool KNLoadAsset(const char *path, void **data, size_t *size);
+
 bool KNPreformInBackground(PthreadCallbackFunc func, void *arg);
 float KNGetRefreshRate(void);
 bool KNGetAppVersion(char *buffer, size_t maxSize);
@@ -52,5 +54,10 @@ bool KNGetAppVersion(char *buffer, size_t maxSize);
 #define knLuaPushEnum(SCRIPT, ENUM_NAME) lua_pushinteger(SCRIPT, ENUM_NAME); lua_setglobal(SCRIPT, #ENUM_NAME);
 #define knReturnNil(SCRIPT) lua_pushnil(SCRIPT); return 1;
 #define KNLoadFunc(RET, NAME, SIG) RET (*NAME) SIG = KNGetSymbolAddr(#NAME);
+
+#define LogI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
+#define LogW(...) __android_log_print(ANDROID_LOG_WARN, TAG, __VA_ARGS__)
+#define LogE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
+#define LogF(...) __android_log_print(ANDROID_LOG_FATAL, TAG, __VA_ARGS__)
 
 #endif // _SHIM_UTIL_H

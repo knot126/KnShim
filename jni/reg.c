@@ -381,9 +381,8 @@ int knEnableDatabase(lua_State *script) {
 	return 0;
 }
 
-void KNDatabaseInit(struct android_app *app, Leaf *leaf) {
-	// Init database save path
-	const char *internal_path = app->activity->internalDataPath;
+const char *KNDatabaseInit(void) {
+	const char *internal_path = gApp->activity->internalDataPath;
 	const char *base_path = "database.kn";
 	
 	gDatabasePath = malloc(strlen(internal_path) + 1 + strlen(base_path) + 1);
@@ -391,4 +390,6 @@ void KNDatabaseInit(struct android_app *app, Leaf *leaf) {
 	strcpy(gDatabasePath, internal_path);
 	strcat(gDatabasePath, "/");
 	strcat(gDatabasePath, base_path);
+	
+	return NULL;
 }

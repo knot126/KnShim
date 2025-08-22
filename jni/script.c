@@ -53,28 +53,32 @@ int load_lua_libs(lua_State *script) {
 
 void KNLoadLua(void);
 
-void KNInitLua(struct android_app *app, Leaf *leaf) {
-	// Install the Lua extensions
+const char *KNInitLua(void) {
+	// NOTE: We used to ship our own copy of Lua built into the shim, but this
+	// frequently broke because Smash Hit changes the internal structure of
+	// tables from the publicly released version, leading to profound memory
+	// corruption. Relying on Smash Hit's internal copy is a lot nicer, anyway,
+	// and reduces the shim size by ~30%.
 	KNLoadLua();
 	
-	// By some luck ARM32 and ARM64 only differ by the pointer size here - the
+	// NOTE: By some luck ARM32 and ARM64 only differ by the pointer size here - the
 	// lua_openlibs reg table is the same offset from this symbol aside from that!
-	luaL_Reg *lua_reg_table = (luaL_Reg *) (LeafSymbolAddr(leaf, "_ZTV17QiFileInputStream") + 6 * sizeof(void *));
+	luaL_Reg *lua_reg_table = (luaL_Reg *) (KNGetSymbolAddr("_ZTV17QiFileInputStream") + 6 * sizeof(void *));
 	
-	if (!lua_reg_table) {
-		__android_log_print(ANDROID_LOG_ERROR, TAG, "Failed to find lua register table");
-		return;
-	}
-	
-	// smash hit always loads it's own luaopen_base first
-	// regardless of what's in the array so we actually load second
-	// and avoid loading the base lib.
+	// Probably due to compiler optimisations, the first value in the reg table
+	// is never used and always point to Smash Hit's own luaopen_base. To make
+	// less trouble, we just go after the base lib.
+	// 
+	// TODO: Would it be more worthwhile to replace luaL_openlibs() with a
+	// custom implementation via hooking instead of doing this?
 	lua_reg_table[1].name = "";
 	lua_reg_table[1].func = load_lua_libs;
 	lua_reg_table[2].name = NULL;
 	lua_reg_table[2].func = NULL;
 	
-	// Set internal and external data paths
-	gAndroidInternalDataPath = strdup(app->activity->internalDataPath);
-	gAndroidExternalDataPath = strdup(app->activity->externalDataPath);
+	// TODO: Most likely not needed anymore
+	gAndroidInternalDataPath = strdup(gApp->activity->internalDataPath);
+	gAndroidExternalDataPath = strdup(gApp->activity->externalDataPath);
+	
+	return NULL;
 }
