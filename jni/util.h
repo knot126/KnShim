@@ -40,7 +40,6 @@ int KNGetAppSDK(void);
 
 void *KNGetSymbolAddr(const char *name);
 bool KNPatch(size_t vaddr, const char *bytes, size_t size);
-int invert_branch(void *addr);
 
 bool KNHookFunction(void *func, void *hook, void **orig);
 void *KNHookFunctionByName(const char *name, void *hook, bool replace);

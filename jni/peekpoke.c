@@ -166,36 +166,6 @@ int knSystemAbi(lua_State *script) {
 	
 	return 1;
 }
-
-int knInvertBranch(lua_State *script) {
-	/**
-	 * addrOrZero = knInvertBranch(addr)
-	 * 
-	 * Inverts the branch at the given address. For example, b.ne <imm> will
-	 * become b.eq <imm> on ARMv8. Note that for ARMv8, only immidate branches
-	 * are supported. On ARMv7, *any* instruction that is already conditional
-	 * can be inverted.
-	 * 
-	 * On success, this returns the address of the branch that was changed. On
-	 * failure this returns nil.
-	 */
-	
-	if (lua_gettop(script) < 1) {
-		lua_pushnil(script);
-		return 1;
-	}
-	
-	size_t addr = knGetAddress(script, 1);
-	
-	if (invert_branch((void *)addr)) {
-		lua_pushnil(script);
-	}
-	else {
-		lua_pushinteger(script, addr);
-	}
-	
-	return 1;
-}
 // END MEMORY
 
 int knPatch(lua_State *script) {
@@ -222,7 +192,6 @@ int knEnablePeekPoke(lua_State *script) {
 	lua_register(script, "knPeek", knPeek);
 	lua_register(script, "knPoke", knPoke);
 	lua_register(script, "knSystemAbi", knSystemAbi);
-	lua_register(script, "knInvertBranch", knInvertBranch);
 	knRegisterFunc(script, knPatch);
 	
 	// Types

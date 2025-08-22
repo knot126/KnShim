@@ -102,60 +102,6 @@ bool KNPatch(size_t vaddr, const char *bytes, size_t size) {
 	return true;
 }
 
-int invert_branch(void *addr) {
-	/**
-	 * Invert the branch at the given address.
-	 * 
-	 * On armv7 this also allows to invert any conditional isntruction but is
-	 * not supported when cond=AL (hex E, bin 0b1110) since that would require
-	 * NOP'ing out the instruction, making it impossible to invert again.
-	 * 
-	 * On armv8 this may only work for instructions of the form b.COND and
-	 * bc.COND with immidate values.
-	 * 
-	 * Return 0 on success, nonzero on error.
-	 */
-	
-	#if defined(__ARM_ARCH_7A__)
-	uint32_t instr = *(uint32_t *)addr;
-	
-	// Nicely, we're allowed to just flip bit 28 and get the inverse
-	// branch for pretty much any type of condition :D
-	// See ARMv7 manual A5.1 and A8.3
-	if ((instr >> 29) != 0b111) {
-		instr ^= 0x10000000;
-		*(uint32_t *)addr = instr;
-		return 0;
-	}
-	// The exception is for cond=AL or cond=1111, for which the first
-	// is unconditional (and we'd have to nop out which would technically
-	// work but means destroying what was there) and the second is also
-	// unconditional but reserved for another set of unconditional
-	// instructions.
-	else {
-		return 1;
-	}
-	#elif defined(__aarch64__)
-	uint32_t instr = *(uint32_t *)addr;
-	
-	// Check that this is either B.cond or BC.cond - that's all we support here!
-	// See C6.2.27 and C6.2.28 of ARMv8 reference manual. Note that bit 4 doesnt
-	// matter for our purposes! Also see C4.2.1 for what cond bits are, same as
-	// ARMv7 basically, so we can again just flip the bits though we don't need
-	// to worry about if cond=1110 or 1111 since they're both the same anyways.
-	if ((instr >> 24) == 0b01010100) {
-		instr ^= 1;
-		*(uint32_t *)addr = instr;
-		return 0;
-	}
-	else {
-		return 1;
-	}
-	#else
-	return 1;
-	#endif
-}
-
 #if defined(__ARM_ARCH_7A__)
 #define LH_AARCH32
 #elif defined(__aarch64__)
