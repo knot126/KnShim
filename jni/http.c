@@ -22,18 +22,11 @@ enum {
 };
 
 int knHttpRelease(lua_State *script);
-int knHttpIndex(lua_State *script);
 
 int knHttpRequest_addmetatable(lua_State *script) {
 	if (luaL_newmetatable(script, "knHttpContext")) {
-		// Garbage collection
 		lua_pushstring(script, "__gc");
 		lua_pushcfunction(script, knHttpRelease);
-		lua_settable(script, -3);
-		
-		// Object oriented support
-		lua_pushstring(script, "__index");
-		lua_pushcfunction(script, knHttpIndex);
 		lua_settable(script, -3);
 	}
 	
@@ -361,59 +354,6 @@ int knHttpRelease(lua_State *script) {
 		ctx->context = NULL;
 	}
 	
-	return 0;
-}
-
-int knHttpIndex(lua_State *script) {
-	knHttpContext *self = lua_touserdata(script, -2);
-	const char *index = lua_tostring(script, -1);
-	
-	if (!self->context) {
-		lua_pushnil(script);
-		return 1;
-	}
-	
-	if (!strcmp(index, "size") || !strcmp(index, "length")) {
-		lua_pushinteger(script, self->context->response_size);
-		return 1;
-	}
-	
-	if (!strcmp(index, "data")) {
-		if (self->context->status == HTTP_STATUS_COMPLETED) {
-			lua_pushlstring(script, self->context->response_data, self->context->response_size);
-		}
-		else {
-			lua_pushnil(script);
-		}
-		return 1;
-	}
-	
-	if (!strcmp(index, "success")) {
-		lua_pushboolean(script, self->context->status == HTTP_STATUS_COMPLETED);
-		return 1;
-	}
-	
-	if (!strcmp(index, "status")) {
-		lua_pushstring(script, self->context->reason_phrase);
-		return 1;
-	}
-	
-	if (!strcmp(index, "statusCode")) {
-		lua_pushinteger(script, self->context->status_code);
-		return 1;
-	}
-	
-	if (!strcmp(index, "update") || !strcmp(index, "process")) {
-		lua_pushcfunction(script, knHttpUpdate);
-		return 1;
-	}
-	
-	if (!strcmp(index, "getHeader")) {
-		lua_pushcfunction(script, knHttpGetHeader);
-		return 1;
-	}
-	
-	luaL_error(script, "Attempted to index knHttpContext with unknown key: '%s'", index);
 	return 0;
 }
 // END HTTP
