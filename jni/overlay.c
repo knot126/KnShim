@@ -21,8 +21,6 @@ mz_zip_archive *gZip;
 
 // Functions
 bool (*QiFileInputStream_open)(QiFileInputStream *this, char *path);
-void (*Game_loadTemplates)(Game *this);
-void (*Player_zero)(Player *this);
 
 // Values which should be used for player zeroing
 int zrBalls = 25;
@@ -56,30 +54,10 @@ bool file_input_stream_open_hook(QiFileInputStream *this, char *path) {
 	return QiFileInputStream_open(this, path);
 }
 
-void player_zero_hook(Player *this) {
-	/**
-	 * Hooks Player::zero() to customise the starting balls and streak.
-	 */
-	
-	Player_zero(this);
-	this->balls = zrBalls;
-	this->streak = zrStreak;
-}
-
 void KNOverlayInit(void) {
-	// Needed for reloading templates
-	if (!Game_loadTemplates) {
-		Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
-	}
-	
 	// Hook file input stream open
 	if (!QiFileInputStream_open) {
 		QiFileInputStream_open = KNHookFunctionByName("_ZN17QiFileInputStream4openEPKc", file_input_stream_open_hook, false);
-	}
-	
-	// Hook player zero
-	if (!Player_zero) {
-		Player_zero = KNHookFunctionByName("_ZN6Player4zeroEv", player_zero_hook, false);
 	}
 }
 
@@ -90,7 +68,7 @@ bool mount_overlay(const char *path) {
 	 */
 	
 	if (gZip) {
-		LogE("Overlay is already mounted");
+		__android_log_print(ANDROID_LOG_ERROR, TAG, "Overlay is already mounted");
 		return false;
 	}
 	
@@ -98,7 +76,7 @@ bool mount_overlay(const char *path) {
 	gZip = malloc(sizeof *gZip);
 	
 	if (!gZip) {
-		LogE("Could not allocate for zip reader");
+		__android_log_print(ANDROID_LOG_ERROR, TAG, "Could not allocate for zip reader");
 		return false;
 	}
 	
@@ -111,7 +89,7 @@ bool mount_overlay(const char *path) {
 		return false;
 	}
 	
-	LogI("Overlay initialised: %s", path);
+	__android_log_print(ANDROID_LOG_INFO, TAG, "Overlay initialised: %s", path);
 	
 	return true;
 }
@@ -233,35 +211,9 @@ static inline Game *get_game(void) {
 	return *ppGame;
 }
 
-int knLoadTemplates(lua_State *script) {
-	KNOverlayInit();
-	
-	Game *gGame = get_game();
-	
-	if (gGame) {
-		Game_loadTemplates(gGame);
-	}
-	else {
-		LogW("gGame is null");
-	}
-	
-	return 0;
-}
-
-int knSetPlayerZeroState(lua_State *script) {
-	KNOverlayInit();
-	
-	zrBalls = lua_tointeger(script, 1);
-	zrStreak = lua_tointeger(script, 2);
-	
-	return 0;
-}
-
 int knEnableOverlay(lua_State *script) {
 	knRegisterFunc(script, knMountOverlay);
 	knRegisterFunc(script, knUnmountOverlay);
-	knRegisterFunc(script, knLoadTemplates);
-	knRegisterFunc(script, knSetPlayerZeroState);
 	
 	return 0;
 }

@@ -378,6 +378,25 @@ int knReload(lua_State *script) {
 	return 0;
 }
 
+void (*Game_loadTemplates)(Game *this);
+
+int knLoadTemplates(lua_State *script) {
+	if (!Game_loadTemplates) {
+		Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
+	}
+	
+	Game *gGame = getGame();
+	
+	if (gGame) {
+		Game_loadTemplates(gGame);
+	}
+	else {
+		__android_log_print(ANDROID_LOG_WARN, TAG, "gGame is null");
+	}
+	
+	return 0;
+}
+
 /**
  * Refresh rate changing
  */
@@ -477,8 +496,9 @@ int knEnableGamectl(lua_State *script) {
 	knRegisterFunc(script, knDisconnectAssetServer);
 	knRegisterFunc(script, knIsConnectedToAssetServer);
 	
-	// Menu reloading
+	// Reloading
 	knRegisterFunc(script, knReload);
+	knRegisterFunc(script, knLoadTemplates);
 	
 	// Level methods
 	knRegisterFunc(script, knLevelHitSomething);
