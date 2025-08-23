@@ -381,6 +381,12 @@ int knReload(lua_State *script) {
 void (*Game_loadTemplates)(Game *this);
 
 int knLoadTemplates(lua_State *script) {
+	/**
+	 * (bool) success = knLoadTemplates()
+	 * 
+	 * Reload templates.
+	 */
+	
 	if (!Game_loadTemplates) {
 		Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
 	}
@@ -389,12 +395,13 @@ int knLoadTemplates(lua_State *script) {
 	
 	if (gGame) {
 		Game_loadTemplates(gGame);
+		lua_pushboolean(script, 1);
 	}
 	else {
-		__android_log_print(ANDROID_LOG_WARN, TAG, "gGame is null");
+		lua_pushboolean(script, 0);
 	}
 	
-	return 0;
+	return 1;
 }
 
 /**
