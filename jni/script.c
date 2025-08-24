@@ -21,6 +21,7 @@ int knEnableDatabase(lua_State *script);
 int knEnableFile(lua_State *script);
 int knEnableGamectl(lua_State *script);
 int knEnableOverlay(lua_State *script);
+int knEnableShaders(lua_State *script);
 
 extern char *gAndroidInternalDataPath;
 extern char *gAndroidExternalDataPath;
@@ -47,6 +48,7 @@ int load_lua_libs(lua_State *script) {
 	knEnableFile(script);
 	knEnableGamectl(script);
 	knEnableOverlay(script);
+	knEnableShaders(script);
 	
 	return 0;
 }
