@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) 2025 Maxim Ershov (@yorshex)
+ *
+ * MIT License
+ */
+
 #define GL_GLES_PROTOTYPES 1
 #include <GLES2/gl2.h>
 
