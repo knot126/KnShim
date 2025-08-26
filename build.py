@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 import os
-import pathlib
 import shutil
 import sys
 from datetime import datetime
+from pathlib import Path
 
 # Write new build date
-pathlib.Path("jni/build_date.h").write_text(f"#define SHIM_BUILD_DATE {datetime.today().strftime('%Y%m%d')}")
+if "--no-regen-header" not in sys.argv:
+	new_data = f"#define SHIM_BUILD_DATE {datetime.today().strftime('%Y%m%d')}\n"
+	Path("jni/build_date.h").write_text(new_data)
 
 # Build
 status = os.system("ndk-build")
 
 # Copy to test apk
-if not status and len(sys.argv) > 1 and sys.argv[1] == "--upgrade":
+if not status and len(sys.argv) > 1 and "--upgrade" in sys.argv:
 	apks = os.listdir("/tmp/apk-editor-studio/apk")
 	
 	if len(apks) > 0:

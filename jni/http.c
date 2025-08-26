@@ -87,73 +87,53 @@ size_t fillHeaders(lua_State *L, int t, http_header_t *headers, size_t count) {
 // HTTP
 int knHttpRequest(lua_State *script) {
 	/**
-	 * getRequest = knHttpRequest(url)
-	 * postRequest = knHttpRequest(url, body)
-	 * request = knHttpRequest(method, url, body, [headers])
+	 * request = knHttpRequest(method, url, [body, [headers]])
 	 * 
-	 * (For legacy GET and POST requests:)
-	 * Create an HTTP GET or POST request. The first argument should be a
-	 * url string. The second argument is an optional POST body. If a body
-	 * is not specified GET is used instead of POST.
+	 * - method: "GET", "POST", "PUT", "DELETE", etc.
+	 * - url: "http://" URL
+	 * - body: none, nil or string representing request body
+	 * - headers: none, nil or dictionary respresenting request headers
 	 * 
-	 * (For the modern API:)
-	 * Creates an HTTP request. The first argument should be the HTTP method,
-	 * that is GET, POST, PUT, DELETE etc. The second is the URL to post to.
-	 * The third argument is the body of the request. If a body is not needed
-	 * or the request type does not use a body, an empty string can be used to
-	 * exclude the request body. The fourth argument is an optional table of
-	 * HTTP headers to include.
+	 * Creates and fires an HTTP request. The first argument should be the HTTP
+	 * method, that is GET, POST, PUT, DELETE etc. The second is the URL to post
+	 * to. The third argument is the body of the request. The fourth argument is
+	 * an optional table of HTTP headers to include.
 	 */
 	
-	if (lua_gettop(script) < 1) {
-		lua_pushnil(script);
-		return 1;
+	if (lua_gettop(script) < 2) {
+		luaL_error(script, "At least two arguments are required: method and url");
+		return 0;
 	}
 	
-	const char *url = lua_tostring(script, 1);
+	const char *method = lua_tostring(script, 1);
 	
-	if (!url) {
-		lua_pushnil(script);
-		return 1;
+	if (!method) {
+		luaL_error(script, "Method could not be converted to a string");
+		return 0;
 	}
 	
-	int top = lua_gettop(script);
+	const char *url = lua_tostring(script, 2);
 	
-	http_t *request;
+	if (!method) {
+		luaL_error(script, "URL could not be converted to a string");
+		return 0;
+	}
 	
-	if (top == 1) {
-		request = http_request("GET", url, NULL, 0, NULL, 0, NULL);
+	size_t body_size = 0;
+	const char *body = lua_tolstring(script, 3, &body_size);
+	
+	size_t num_headers = lua_istable(script, 4) ? seqenceLength(script, 4) : 0;
+	http_header_t headers[num_headers];
+	
+	if (num_headers) {
+		fillHeaders(script, 4, headers, num_headers);
 	}
-	else if (top == 2) {
-		size_t size = 0;
-		const char *body = lua_tolstring(script, 2, &size);
-		
-		request = http_request("POST", url, body, size, NULL, 0, NULL);
-	}
-	else {
-		const char *method = lua_tostring(script, 1);
-		url = lua_tostring(script, 2);
-		
-		size_t size = 0;
-		const char *body = lua_tolstring(script, 3, &size);
-		
-		// Handle headers (or dont)
-		if (lua_istable(script, 4)) {
-			size_t num_headers = seqenceLength(script, 4);
-			http_header_t headers[num_headers];
-			
-			fillHeaders(script, 4, headers, num_headers);
-			
-			request = http_request(method, url, body, size, headers, num_headers, NULL);
-		}
-		else {
-			request = http_request(method, url, body, size, NULL, 0, NULL);
-		}
-	}
+	
+	http_t *request = http_request(method, url, body, body_size, num_headers ? headers : NULL, num_headers, NULL);
 	
 	if (!request) {
-		lua_pushnil(script);
-		return 1;
+		luaL_error(script, "Could not create request object");
+		return 0;
 	}
 	
 	knHttpContext *ctx = lua_newuserdata(script, sizeof *ctx);

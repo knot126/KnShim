@@ -30,6 +30,18 @@ typedef struct ResMan {
 	// unknown contents
 } ResMan;
 
+typedef struct Resource {
+	ResMan *resMan;
+	QiString path;
+	void *resource;
+	int type;
+	/* 64-bit: 4 bytes padding */
+} Resource;
+
+typedef struct Gfx {
+	// unknown
+} Gfx;
+
 typedef uint32_t QiByteOrder;
 
 typedef struct QiOutputStreamVtable {
@@ -103,24 +115,6 @@ typedef struct Level {
 	float offsetZ;
 } Level;
 
-typedef struct Game {
-	void *device;
-	void *input;
-	void *display;
-	void *renderer;
-	ResMan *resman;
-	void *audio;
-	void *debug;
-	void *gfx;
-	void *scene1;
-	void *scene2;
-	void *scene3;
-	Level *level;
-	Player *player;
-	void *http_thread;
-	// incomplete
-} Game;
-
 typedef struct QiFileOutputStream {
 	char _unknown0[0xc];
 	FILE *file;
@@ -142,24 +136,6 @@ typedef struct Level {
 	float offsetZ;
 } Level;
 
-typedef struct Game {
-	void *device;
-	void *input;
-	void *display;
-	void *renderer;
-	void *resman;
-	void *audio;
-	void *debug;
-	void *gfx;
-	void *scene1;
-	void *scene2;
-	void *scene3;
-	Level *level;
-	Player *player;
-	void *http_thread;
-	// incomplete
-} Game;
-
 typedef struct QiFileOutputStream {
 	char _unknown0[0x10];
 	FILE *file;
@@ -169,3 +145,21 @@ typedef struct QiFileOutputStream {
 #else
 #warning smashhit.h not defined for this platform
 #endif
+
+typedef struct Game {
+	void *device;
+	void *input;
+	void *display;
+	void *renderer;
+	ResMan *resman;
+	void *audio;
+	void *debug;
+	Gfx *gfx;
+	void *scene1;
+	void *scene2;
+	void *scene3;
+	Level *level;
+	Player *player;
+	void *http_thread;
+	// incomplete
+} Game;
