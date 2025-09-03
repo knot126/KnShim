@@ -404,20 +404,21 @@ int knLoadTemplates(lua_State *script) {
 	return 1;
 }
 
+void (*Gfx_construct)(Gfx *this, ResMan *resMan);
+void (*Gfx_destruct)(Gfx *this);
 void (*Gfx_load1)(Gfx *this, ResMan *resMan);
 void (*Gfx_load2)(Gfx *this, ResMan *resMan);
 
 int knLoadGfx(lua_State *script) {
 	/**
-	 * knLoadGfx((bool) load1, (bool) load2)
+	 * knLoadGfx()
 	 * 
-	 * Reload some or all of the game's hardcoded shaders and textures.
-	 * 
-	 * load1: Reloads all shaders, and some textures, most notably the tiles sprite.
-	 * load2: Reloads other textures, most notably the doors and sprites textures.
+	 * Reload all of the game's hardcoded shaders and textures.
 	 */
 	
 	if (!Gfx_load1 || !Gfx_load2) {
+		Gfx_construct = KNGetSymbolAddr("_ZN3GfxC2EP6ResMan");
+		Gfx_destruct = KNGetSymbolAddr("_ZN3GfxD2Ev");
 		Gfx_load1 = KNGetSymbolAddr("_ZN3Gfx5load1EP6ResMan");
 		Gfx_load2 = KNGetSymbolAddr("_ZN3Gfx5load2EP6ResMan");
 	}
@@ -428,13 +429,10 @@ int knLoadGfx(lua_State *script) {
 		return 0;
 	}
 	
-	if (lua_toboolean(script, 1)) {
-		Gfx_load1(gGame->gfx, gGame->resman);
-	}
-	
-	if (lua_toboolean(script, 2)) {
-		Gfx_load2(gGame->gfx, gGame->resman);
-	}
+	Gfx_destruct(gGame->gfx);
+	Gfx_construct(gGame->gfx, gGame->resman);
+	Gfx_load1(gGame->gfx, gGame->resman);
+	Gfx_load2(gGame->gfx, gGame->resman);
 	
 	return 0;
 }
