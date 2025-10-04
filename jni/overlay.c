@@ -141,7 +141,7 @@ bool KNOverlayLoad(QiFileInputStream *this, const char *path) {
 struct Overlay;
 
 typedef bool (*OverlayExistsFunc)(struct Overlay *this, const char *path);
-typedef bool (*OverlayLoadFunc)(struct Overlay *this, const char *path, FILE *file);
+typedef FILE *(*OverlayLoadFunc)(struct Overlay *this, const char *path);
 typedef void (*OverlayReleaseFunc)(struct Overlay *this);
 
 struct Overlay {
@@ -166,15 +166,11 @@ FILE *OverlayLoad(Overlay *this, const char *path, size_t *size) {
 	 * and calling rewind on it once it's been loaded.
 	 */
 	
-	FILE *file = tmpfile();
+	FILE *file = this->load(this, path);
 	
-	if (!this->load(this, path, file)) {
-		fclose(file);
+	if (!file) {
 		return NULL;
 	}
-	
-	fflush(file);
-	rewind(file);
 	
 	// Getting file length, the POSIX(tm) way.(tm)
 	int fd = fileno(file);
@@ -199,6 +195,11 @@ void OverlayRelease(Overlay *this) {
 	free(this);
 }
 
+#define OverlayAllocate(T) { Overlay *T = malloc(sizeof *T); if (!T) { return NULL; } T->context = malloc(sizeof *T->context); if (!T->context) { free(T); return NULL; } }
+
+/**
+ * Manager to allow mounting multiple overlays at once, in an order.
+ */
 struct OverlayManager {
 	Overlay **overlay;
 	size_t count;
@@ -238,7 +239,8 @@ void OverlayManagerPop(OverlayManager *this, Overlay *overlay) {
 FILE *OverlayManagerLoad(OverlayManager *this, const char *path, size_t *size) {
 	/**
 	 * Load a file from the first overlay that contains it. Overlays are
-	 * searched top down (so newer overlays take precedence over old ones).
+	 * searched top down (so more recently added overlays take precedence over
+	 * old ones).
 	 */
 	
 	for (size_t i = this->count; i != 0; i--) {
@@ -251,6 +253,136 @@ FILE *OverlayManagerLoad(OverlayManager *this, const char *path, size_t *size) {
 	
 	return NULL;
 }
+
+// Main instance of the overlay manager.
+OverlayManager gOverlayMan;
+
+/**
+ * Code that acts as a shim between OverlayManagerLoad and QiFileInputStream::load
+ */
+bool KNOverlayLoad(QiFileInputStream *this, const char *path) {
+	size_t size = 0;
+	
+	FILE *file = OverlayManagerLoad(&gOverlayMan, path, &size);
+	
+	if (file) {
+		this->file = file;
+		this->size = size;
+		this->position = 0;
+		this->androidAsset = NULL; // ignored if null
+		memset(&this->path, 0, sizeof this->path);
+	}
+	
+	return !!fi;
+}
+
+/**
+ * Directory type overlays, simple but useful.
+ */
+#define JoinPaths(Dest, S1, S2) char *Dest[strlen(S1) + strlen(S2) + 2]; { strcpy(Dest, S1); strcat(Dest, "/"); strcat(Dest, S2); }
+
+typedef struct {
+	const char *directory;
+} DirOverlayState;
+
+bool DirOverlayExists(Overlay *this, const char *path) {
+	JoinPaths(physical_path, ((DirOverlayState *) this->context)->directory, path);
+	
+	FILE *file = fopen(physical_path, "rb");
+	
+	if (file) {
+		fclose(file);
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+FILE *DirOverlayLoad(Overlay *this, const char *path) {
+	JoinPaths(physical_path, ((DirOverlayState *) this->context)->directory, path);
+	return fopen(physical_path, "rb");
+}
+
+void DirOverlayRelease(Overlay *this) {
+	free(this->directory);
+}
+
+Overlay *DirOverlayCreate(const char *directory) {
+	OverlayAllocate(this);
+	((DirOverlayState *) this->context)->directory = strdup(directory);
+	this->exists = DirOverlayExists;
+	this->load = DirOverlayLoad;
+	this->release = DirOverlayRelease;
+	return this;
+}
+
+#undef JoinPaths
+
+/**
+ * ZIP-file based overlays, useful for loading resources in packs.
+ */
+#define theZip (&((ZipOverlayState *) this->context)->zip)
+
+typedef struct {
+	mz_zip_archive zip;
+} ZipOverlayState;
+
+bool ZipOverlayExists(Overlay *this, const char *path) {
+	int index = mz_zip_reader_locate_file(theZip, path, NULL, 0);
+	return index != -1;
+}
+
+static size_t ZipOverlayWriteCallback(void *pOpaque, mz_uint64 file_ofs, const void *pBuf, size_t n) {
+	return fwrite(pBuf, 1, n, (FILE *) pOpaque);
+}
+
+FILE *ZipOverlayLoad(Overlay *this, const char *path) {
+	int fileIndex = mz_zip_reader_locate_file(theZip, path, NULL, 0);
+	
+	if (fileIndex == -1) {
+		return NULL;
+	}
+	
+	FILE *file = tmpfile();
+	
+	if (!file) {
+		return NULL;
+	}
+	
+	if (!mz_zip_reader_extract_to_callback(theZip, fileIndex, ZipOverlayWriteCallback, file, 0)) {
+		fclose(file);
+		return NULL;
+	}
+	
+	fflush(file);
+	rewind(file);
+	
+	return file;
+}
+
+void ZipOverlayRelease(Overlay *this) {
+	mz_zip_reader_end(theZip);
+	free(theZip);
+}
+
+Overlay *ZipOverlayCreate(const char *zip_path) {
+	OverlayAllocate(this);
+	mz_zip_zero_struct(theZip);
+	
+	if (!mz_zip_reader_init_file(theZip, zip_path, 0)) {
+		OverlayRelease(this);
+		return NULL;
+	}
+	
+	this->exists = ZipOverlayExists;
+	this->load = ZipOverlayLoad;
+	this->release = ZipOverlayRelease;
+	
+	return this;
+}
+
+#undef theZip
 #endif
 
 /**
