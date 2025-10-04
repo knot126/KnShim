@@ -22,10 +22,6 @@ mz_zip_archive *gZip;
 // Functions
 bool (*QiFileInputStream_open)(QiFileInputStream *this, char *path);
 
-// Values which should be used for player zeroing
-int zrBalls = 25;
-int zrStreak = 0;
-
 bool KNLoadFromOverlay(QiFileInputStream *this, const char *path);
 
 bool file_input_stream_open_hook(QiFileInputStream *this, char *path) {
