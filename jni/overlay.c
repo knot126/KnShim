@@ -206,11 +206,6 @@ int knUnmountOverlay(lua_State *script) {
 	return 1;
 }
 
-static inline Game *get_game(void) {
-	Game **ppGame = KNGetSymbolAddr("gGame");
-	return *ppGame;
-}
-
 int knEnableOverlay(lua_State *script) {
 	knRegisterFunc(script, knMountOverlay);
 	knRegisterFunc(script, knUnmountOverlay);

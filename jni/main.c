@@ -12,10 +12,12 @@
 
 typedef void (*AndroidMainFunc)(struct android_app *app);
 
+const char *KNInitCore(void);
 const char *KNInitLua(void);
 const char *KNDatabaseInit(void);
 
 ModuleInitFunc gModuleInitFuncs[] = {
+	KNInitCore,
 	KNInitLua,
 	KNDatabaseInit,
 	NULL,
@@ -37,11 +39,13 @@ AAsset *load_libsmashhit(struct android_app *app, const void **data, size_t *len
 	return asset;
 }
 
+bool KNInitEarlyCore(void);
+
 void android_main(struct android_app *app) {
 	// Set gApp to android app structure
 	gApp = app;
 	
-	if (!KNInit()) {
+	if (!KNInitEarlyCore()) {
 		LogF("Early shim init failed");
 		return;
 	}
@@ -57,7 +61,7 @@ void android_main(struct android_app *app) {
 		return;
 	}
 	else {
-		LogI("Leaf initialised");
+		LogI("Leaf inited");
 	}
 	
 	// Load the contents of LSH

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include "extern/leaf.h"
+#include "smashhit.h"
 
 #define TAG "knshim"
 
@@ -29,11 +30,12 @@ extern struct android_app *gApp;
 
 extern void *gLibAndroid;
 extern void *gLibC;
+extern Game **gGamePtr;
+
+#define gGame (*gGamePtr)
 
 typedef const char *(*ModuleInitFunc)(void);
 typedef void *(*PthreadCallbackFunc)(void *arg);
-
-bool KNInit(void);
 
 int KNGetDeviceSDK(void);
 int KNGetAppSDK(void);

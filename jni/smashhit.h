@@ -1,3 +1,6 @@
+#ifndef _SMASHHIT_H_
+#define _SMASHHIT_H_
+
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -163,3 +166,5 @@ typedef struct Game {
 	void *http_thread;
 	// incomplete
 } Game;
+
+#endif

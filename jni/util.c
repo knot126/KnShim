@@ -9,16 +9,17 @@
 #include "extern/leaf.h"
 #include "util.h"
 
+/* Shim-wide globals */
 struct android_app *gApp;
-
 Leaf *gLeaf;
-
+Game **gGamePtr;
 void *gLibAndroid;
 void *gLibC;
 
-bool KNInit(void) {
+bool KNInitEarlyCore(void) {
 	/**
-	 * Initialise some core stuff the shim needs
+	 * Initialise some core stuff the shim needs. This happens *before* Smash
+	 * Hit is loaded.
 	 */
 	
 	// dynamically load libandroid.so for functions that might not be available
@@ -38,6 +39,11 @@ bool KNInit(void) {
 	}
 	
 	return true;
+}
+
+const char *KNInitCore(void) {
+	gGamePtr = KNGetSymbolAddr("gGame");
+	return NULL;
 }
 
 #define LOAD_LIBANDROID_FUNC(RET, NAME, SIG) RET (*NAME)SIG = dlsym(gLibAndroid, #NAME);

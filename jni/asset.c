@@ -93,7 +93,7 @@ bool KNLoadAsset(const char *path, void **data, size_t *size) {
 		ResMan_load = KNGetSymbolAddr("_ZN6ResMan4loadERK8QiStringR14QiOutputStream");
 	}
 	
-	ResMan *gResMan = (*(Game **) KNGetSymbolAddr("gGame"))->resman;
+	ResMan *resMan = gGame->resman;
 	
 	QiString qPath = {
 		.data = (char *)path,
@@ -103,7 +103,7 @@ bool KNLoadAsset(const char *path, void **data, size_t *size) {
 	KnMemoryOutputStream os;
 	KnMemoryOutputStream_init(&os);
 	
-	bool status = ResMan_load(gResMan, &qPath, (QiOutputStream *) &os);
+	bool status = ResMan_load(resMan, &qPath, (QiOutputStream *) &os);
 	
 	if (status) {
 		status = KnMemoryOutputStream_accquireData(&os, data, size);

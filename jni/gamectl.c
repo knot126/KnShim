@@ -12,15 +12,6 @@
 #include "util.h"
 #include "smashhit.h"
 
-static inline Game *getGame(void) {
-	Game **ppGame = KNGetSymbolAddr("gGame");
-	return *ppGame;
-}
-
-static inline Level *getLevel(void) {
-	return getGame()->level;
-}
-
 #define MakeQiString(CSTR) (QiString) { \
 	.data = (char *) CSTR, \
 	.allocated_size = strlen(CSTR), \
@@ -35,8 +26,7 @@ int knSetBalls(lua_State *script) {
 	 * Set the player's ball count
 	 */
 	
-	Game *game = getGame();
-	game->player->balls = lua_tointeger(script, 1);
+	gGame->player->balls = lua_tointeger(script, 1);
 	return 0;
 }
 
@@ -45,8 +35,7 @@ int knGetBalls(lua_State *script) {
 	 * Get the player's ballcount. This is accurate even if knSetBalls was used.
 	 */
 	
-	Game *game = getGame();
-	lua_pushinteger(script, game->player->balls);
+	lua_pushinteger(script, gGame->player->balls);
 	return 1;
 }
 
@@ -55,8 +44,7 @@ int knSetStreak(lua_State *script) {
 	 * Set the player's streak
 	 */
 	
-	Game *game = getGame();
-	game->player->streak = lua_tointeger(script, 1);
+	gGame->player->streak = lua_tointeger(script, 1);
 	return 0;
 }
 
@@ -65,8 +53,7 @@ int knGetStreak(lua_State *script) {
 	 * Get the player's streak. This is accurate even if knSetStreak was used.
 	 */
 	
-	Game *game = getGame();
-	lua_pushinteger(script, game->player->streak);
+	lua_pushinteger(script, gGame->player->streak);
 	return 1;
 }
 
@@ -111,30 +98,30 @@ int knGetNoclip(lua_State *script) {
  */
 int knLevelHitSomething(lua_State *script) {
 	void (*hitSomething)(Level*, int) = KNGetSymbolAddr("_ZN5Level12hitSomethingEi");
-	hitSomething(getLevel(), lua_tointeger(script, 1));
+	hitSomething(gGame->level, lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelStreakAbort(lua_State *script) {
 	void (*streakAbort)(Level*, int) = KNGetSymbolAddr("_ZN5Level11streakAbortEi");
-	streakAbort(getLevel(), lua_tointeger(script, 1));
+	streakAbort(gGame->level, lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelStreakInc(lua_State *script) {
 	void (*streakInc)(Level*, int) = KNGetSymbolAddr("_ZN5Level9streakIncEi");
-	streakInc(getLevel(), lua_tointeger(script, 1));
+	streakInc(gGame->level, lua_tointeger(script, 1));
 	return 0;
 }
 
 int knLevelAddScore(lua_State *script) {
 	void (*addScore)(Level*, int, int) = KNGetSymbolAddr("_ZN5Level8addScoreEii");
-	addScore(getLevel(), lua_tointeger(script, 1), lua_tointeger(script, 2));
+	addScore(gGame->level, lua_tointeger(script, 1), lua_tointeger(script, 2));
 	return 0;
 }
 
 int knLevelExplosion(lua_State *script) {
-	Level *level = getLevel();
+	Level *level = gGame->level;
 	
 	QiVec3 pos = {
 		.x = lua_tonumber(script, 1),
@@ -391,8 +378,6 @@ int knLoadTemplates(lua_State *script) {
 		Game_loadTemplates = KNGetSymbolAddr("_ZN4Game13loadTemplatesEv");
 	}
 	
-	Game *gGame = getGame();
-	
 	if (gGame) {
 		Game_loadTemplates(gGame);
 		lua_pushboolean(script, 1);
@@ -422,8 +407,6 @@ int knLoadGfx(lua_State *script) {
 		Gfx_load1 = KNGetSymbolAddr("_ZN3Gfx5load1EP6ResMan");
 		Gfx_load2 = KNGetSymbolAddr("_ZN3Gfx5load2EP6ResMan");
 	}
-	
-	Game *gGame = getGame();
 	
 	if (!gGame) {
 		return 0;
