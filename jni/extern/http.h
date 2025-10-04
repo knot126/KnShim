@@ -3,7 +3,8 @@
           Licensing information can be found at the end of the file.
 ------------------------------------------------------------------------------
 
-http.hpp - v1.0 - Basic HTTP protocol implementation over sockets (no https).
+http.h v2.0 - Basic HTTP protocol implementation over sockets, with optional
+mbedTLS https support.
 
 Modified by Knot126 for KnShim :3
 
@@ -230,11 +231,9 @@ Releases the resources acquired by `http_get` or `http_post`. Should be call whe
     #define HTTP_FREE( ctx, ptr ) ( free( ptr ) )
 #endif
 
-typedef struct http_internal_t 
-    {
-    /* keep this at the top!*/ 
+typedef struct http_internal_t {
+    /* keep this at the top because http_internal_t* can be cast to http_t* */ 
     http_t http;
-    /* because http_internal_t* can be cast to http_t*. */
     
     void* memctx;
     HTTP_SOCKET socket;
@@ -249,7 +248,7 @@ typedef struct http_internal_t
     size_t data_size;
     size_t data_capacity;
     void* data;
-    } http_internal_t;
+} http_internal_t;
 
 
 static int http_internal_parse_url( char const* url, char* address, size_t address_capacity, char* port, 
