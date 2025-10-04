@@ -140,23 +140,13 @@ bool KNOverlayLoad(QiFileInputStream *this, const char *path) {
  */
 struct Overlay;
 
-typedef bool (*OverlayExistsFunc)(struct Overlay *this, const char *path);
 typedef FILE *(*OverlayLoadFunc)(struct Overlay *this, const char *path);
 typedef void (*OverlayReleaseFunc)(struct Overlay *this);
 
 struct Overlay {
 	void *context;
-	OverlayExistsFunc exists;
 	OverlayLoadFunc load;
 	OverlayReleaseFunc release;
-}
-
-bool OverlayExists(Overlay *this, const char *path) {
-	/**
-	 * Check if this overlay has a file at the given path.
-	 */
-	
-	return this->exists(this, path);
 }
 
 FILE *OverlayLoad(Overlay *this, const char *path, size_t *size) {
@@ -246,8 +236,10 @@ FILE *OverlayManagerLoad(OverlayManager *this, const char *path, size_t *size) {
 	for (size_t i = this->count; i != 0; i--) {
 		Overlay *overlay = this->overlay[i-1];
 		
-		if (OverlayExists(overlay, path)) {
-			return OverlayLoad(overlay, path, size);
+		FILE *file = OverlayLoad(overlay, path, size);
+		
+		if (file) {
+			return file;
 		}
 	}
 	
@@ -285,20 +277,6 @@ typedef struct {
 	const char *directory;
 } DirOverlayState;
 
-bool DirOverlayExists(Overlay *this, const char *path) {
-	JoinPaths(physical_path, ((DirOverlayState *) this->context)->directory, path);
-	
-	FILE *file = fopen(physical_path, "rb");
-	
-	if (file) {
-		fclose(file);
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
 FILE *DirOverlayLoad(Overlay *this, const char *path) {
 	JoinPaths(physical_path, ((DirOverlayState *) this->context)->directory, path);
 	return fopen(physical_path, "rb");
@@ -311,7 +289,6 @@ void DirOverlayRelease(Overlay *this) {
 Overlay *DirOverlayCreate(const char *directory) {
 	OverlayAllocate(this);
 	((DirOverlayState *) this->context)->directory = strdup(directory);
-	this->exists = DirOverlayExists;
 	this->load = DirOverlayLoad;
 	this->release = DirOverlayRelease;
 	return this;
@@ -327,11 +304,6 @@ Overlay *DirOverlayCreate(const char *directory) {
 typedef struct {
 	mz_zip_archive zip;
 } ZipOverlayState;
-
-bool ZipOverlayExists(Overlay *this, const char *path) {
-	int index = mz_zip_reader_locate_file(theZip, path, NULL, 0);
-	return index != -1;
-}
 
 static size_t ZipOverlayWriteCallback(void *pOpaque, mz_uint64 file_ofs, const void *pBuf, size_t n) {
 	return fwrite(pBuf, 1, n, (FILE *) pOpaque);
@@ -375,7 +347,6 @@ Overlay *ZipOverlayCreate(const char *zip_path) {
 		return NULL;
 	}
 	
-	this->exists = ZipOverlayExists;
 	this->load = ZipOverlayLoad;
 	this->release = ZipOverlayRelease;
 	
@@ -383,6 +354,20 @@ Overlay *ZipOverlayCreate(const char *zip_path) {
 }
 
 #undef theZip
+
+/**
+ * User defined callbacks - can be used to generate assets dynamically.
+ * Currently limited to using the main menu's script since that will always be
+ * available.
+ */
+
+typedef struct {
+	const char function_name[256];
+} LuaOverlayState;
+
+FILE *LuaOverlayLoad(Overlay *this, const char *path) {
+	lua_State *L = *gGame->menuScene->script->state;
+}
 #endif
 
 /**

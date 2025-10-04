@@ -29,9 +29,32 @@ typedef struct Script {
 	// incomplete
 } Script;
 
+typedef struct _ResManHashTable {
+	int size;
+	int capacity;
+	void *entries;
+} _ResManHashTable;
+
 typedef struct ResMan {
-	// unknown contents
+	union {
+		// no idea what this does... void* used for explicit padding, would be
+		// fine without probably.
+		void *u0;
+		bool u1;
+	};
+	_ResManHashTable resource_map;
+	QiString u3;
+	QiString u4;
+	QiString additionalPath;
+	QiString u6;
 } ResMan;
+
+typedef struct Scene {
+	QiString path;
+	ResMan resman;
+	QiScript script;
+	// etc...
+} Scene;
 
 typedef struct Resource {
 	ResMan *resMan;
@@ -158,9 +181,9 @@ typedef struct Game {
 	void *audio;
 	void *debug;
 	Gfx *gfx;
-	void *scene1;
-	void *scene2;
-	void *scene3;
+	Scene *menuScene;
+	Scene *movieScene;
+	Scene *hudScene;
 	Level *level;
 	Player *player;
 	void *http_thread;
