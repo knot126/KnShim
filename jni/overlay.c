@@ -16,6 +16,7 @@
 #include "util.h"
 #include "smashhit.h"
 
+#ifndef NEW_OVERLAYS
 // Zip reading related
 mz_zip_archive *gZip;
 
@@ -114,7 +115,7 @@ FILE *KNExtractOverlayToTempfile(mz_zip_archive *archive, const char *path, size
 	return file;
 }
 
-bool KNLoadFromOverlay(QiFileInputStream *this, const char *path) {
+bool KNOverlayLoad(QiFileInputStream *this, const char *path) {
 	size_t size = 0;
 	
 	FILE *fi = KNExtractOverlayToTempfile(gZip, path, &size);
@@ -129,6 +130,128 @@ bool KNLoadFromOverlay(QiFileInputStream *this, const char *path) {
 	
 	return !!fi;
 }
+#else
+#include <sys/stat.h>
+
+/**
+ * A single, abstract overlay. The actual backing implementation may be a
+ * physical directory, archive file, script callback or even something else but
+ * the basic interface is still the same.
+ */
+struct Overlay;
+
+typedef bool (*OverlayExistsFunc)(struct Overlay *this, const char *path);
+typedef bool (*OverlayLoadFunc)(struct Overlay *this, const char *path, FILE *file);
+typedef void (*OverlayReleaseFunc)(struct Overlay *this);
+
+struct Overlay {
+	void *context;
+	OverlayExistsFunc exists;
+	OverlayLoadFunc load;
+	OverlayReleaseFunc release;
+}
+
+bool OverlayExists(Overlay *this, const char *path) {
+	/**
+	 * Check if this overlay has a file at the given path.
+	 */
+	
+	return this->exists(this, path);
+}
+
+FILE *OverlayLoad(Overlay *this, const char *path, size_t *size) {
+	/**
+	 * Load a file from the overlay into a temporary file. This also takes care
+	 * of things like opening the file in the first place, getting the length,
+	 * and calling rewind on it once it's been loaded.
+	 */
+	
+	FILE *file = tmpfile();
+	
+	if (!this->load(this, path, file)) {
+		fclose(file);
+		return NULL;
+	}
+	
+	fflush(file);
+	rewind(file);
+	
+	// Getting file length, the POSIX(tm) way.(tm)
+	int fd = fileno(file);
+	struct stat file_stat;
+	
+	if (fstat(fd, &file_stat)) {
+		fclose(file);
+		return NULL;
+	}
+	
+	*size = file_stat->st_size;
+	
+	return file;
+}
+
+void OverlayRelease(Overlay *this) {
+	/**
+	 * Release all resources related to an overlay.
+	 */
+	
+	this->release(this);
+	free(this);
+}
+
+struct OverlayManager {
+	Overlay **overlay;
+	size_t count;
+};
+
+inline static void *xrealloc(void *block, size_t size) {
+	if (size == 0) { free(block); return NULL; }
+	else { return realloc(block, size); }
+}
+
+bool OverlayManagerPush(OverlayManager *this, Overlay *overlay) {
+	/**
+	 * Push a new overlay on top of the stack.
+	 */
+	
+	this->count++;
+	Overlay *overlay_stack = xrealloc(this->overlay, sizeof *this->overlay * this->count);
+	
+	if (!overlay_stack) {
+		return false;
+	}
+	else {
+		this->overlay = overlay_stack;
+		return true;
+	}
+}
+
+void OverlayManagerPop(OverlayManager *this, Overlay *overlay) {
+	/**
+	 * Pop an overlay from the top of the stack, releasing it.
+	 */
+	
+	this->count--;
+	OverlayRelease(this->overlay[this->count]);
+}
+
+FILE *OverlayManagerLoad(OverlayManager *this, const char *path, size_t *size) {
+	/**
+	 * Load a file from the first overlay that contains it. Overlays are
+	 * searched top down (so newer overlays take precedence over old ones).
+	 */
+	
+	for (size_t i = this->count; i != 0; i--) {
+		Overlay *overlay = this->overlay[i-1];
+		
+		if (OverlayExists(overlay, path)) {
+			return OverlayLoad(overlay, path, size);
+		}
+	}
+	
+	return NULL;
+}
+#endif
 
 /**
  * ============================================================================
@@ -182,7 +305,7 @@ bool QiFileInputStream_open_hook(QiFileInputStream *this, char *path) {
 	
 	// Try loading from overlay first
 	if (gZip) {
-		if (KNLoadFromOverlay(this, path)) {
+		if (KNOverlayLoad(this, path)) {
 			return true;
 		}
 		
@@ -191,7 +314,7 @@ bool QiFileInputStream_open_hook(QiFileInputStream *this, char *path) {
 		strcpy(path_no_mp3, path);
 		path_no_mp3[strlen(path)-4] = '\0';
 		
-		if (KNLoadFromOverlay(this, path_no_mp3)) {
+		if (KNOverlayLoad(this, path_no_mp3)) {
 			return true;
 		}
 	}
