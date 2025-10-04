@@ -19,44 +19,6 @@
 // Zip reading related
 mz_zip_archive *gZip;
 
-// Functions
-bool (*QiFileInputStream_open)(QiFileInputStream *this, char *path);
-
-bool KNLoadFromOverlay(QiFileInputStream *this, const char *path);
-
-bool file_input_stream_open_hook(QiFileInputStream *this, char *path) {
-	/**
-	 * Hook which sits between QiFileInputStream::open() calls and tries to open
-	 * files from overlays before moving on to the assets directory.
-	 */
-	
-	// Try loading from overlay first
-	if (gZip) {
-		if (KNLoadFromOverlay(this, path)) {
-			return true;
-		}
-		
-		// Also try loading without .mp3 (this is really needed ig...)
-		char path_no_mp3[strlen(path)+1];
-		strcpy(path_no_mp3, path);
-		path_no_mp3[strlen(path)-4] = '\0';
-		
-		if (KNLoadFromOverlay(this, path_no_mp3)) {
-			return true;
-		}
-	}
-	
-	// Try real assets dir if that doesn't work
-	return QiFileInputStream_open(this, path);
-}
-
-void KNOverlayInit(void) {
-	// Hook file input stream open
-	if (!QiFileInputStream_open) {
-		QiFileInputStream_open = KNHookFunctionByName("_ZN17QiFileInputStream4openEPKc", file_input_stream_open_hook, false);
-	}
-}
-
 bool mount_overlay(const char *path) {
 	/**
 	 * Attach an overlay zip so that any files in the zip will be loaded before
@@ -175,8 +137,6 @@ bool KNLoadFromOverlay(QiFileInputStream *this, const char *path) {
  */
 
 int knMountOverlay(lua_State *script) {
-	KNOverlayInit();
-	
 	if (lua_gettop(script) < 1) {
 		return 0;
 	}
@@ -195,8 +155,6 @@ int knMountOverlay(lua_State *script) {
 }
 
 int knUnmountOverlay(lua_State *script) {
-	KNOverlayInit();
-	
 	lua_pushboolean(script, unmount_overlay());
 	
 	return 1;
@@ -207,4 +165,46 @@ int knEnableOverlay(lua_State *script) {
 	knRegisterFunc(script, knUnmountOverlay);
 	
 	return 0;
+}
+
+/**
+ * ============================================================================
+ * Boilerplate overlay init and hooking code
+ * ============================================================================
+ */
+bool (*QiFileInputStream_open)(QiFileInputStream *this, char *path);
+
+bool QiFileInputStream_open_hook(QiFileInputStream *this, char *path) {
+	/**
+	 * Hook which sits between QiFileInputStream::open() calls and tries to open
+	 * files from overlays before moving on to the assets directory.
+	 */
+	
+	// Try loading from overlay first
+	if (gZip) {
+		if (KNLoadFromOverlay(this, path)) {
+			return true;
+		}
+		
+		// Also try loading without .mp3 (this is really needed ig...)
+		char path_no_mp3[strlen(path)+1];
+		strcpy(path_no_mp3, path);
+		path_no_mp3[strlen(path)-4] = '\0';
+		
+		if (KNLoadFromOverlay(this, path_no_mp3)) {
+			return true;
+		}
+	}
+	
+	// Try real assets dir if that doesn't work
+	return QiFileInputStream_open(this, path);
+}
+
+const char *KNOverlayInit(void) {
+	// Hook file input stream open
+	if (!QiFileInputStream_open) {
+		QiFileInputStream_open = KNHookFunctionByName("_ZN17QiFileInputStream4openEPKc", QiFileInputStream_open_hook, false);
+	}
+	
+	return NULL;
 }
