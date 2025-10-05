@@ -357,8 +357,6 @@ static size_t ZipOverlayWriteCallback(void *pOpaque, mz_uint64 file_ofs, const v
 }
 
 FILE *ZipOverlayLoad(Overlay *this, const char *path) {
-	// LogI("this=%p theZip=%p path=%s", this, theZip, path);
-	
 	int fileIndex = mz_zip_reader_locate_file(theZip, path, NULL, MZ_ZIP_FLAG_CASE_SENSITIVE);
 	
 	if (fileIndex == -1) {
