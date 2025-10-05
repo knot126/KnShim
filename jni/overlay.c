@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
 #include "lua/lua.h"
 #include "lua/lualib.h"
@@ -16,7 +17,7 @@
 #include "util.h"
 #include "smashhit.h"
 
-#ifndef NEW_OVERLAYS
+#ifdef OLD_OVERLAYS
 // Zip reading related
 mz_zip_archive *gZip;
 
@@ -130,8 +131,45 @@ bool KNOverlayLoad(QiFileInputStream *this, const char *path) {
 	
 	return !!fi;
 }
+
+/**
+ * ============================================================================
+ * Lua functions
+ * ============================================================================
+ */
+
+int knMountOverlay(lua_State *script) {
+	if (lua_gettop(script) < 1) {
+		return 0;
+	}
+	
+	const char *path = lua_tostring(script, 1);
+	
+	if (!path) {
+		return 0;
+	}
+	
+	bool status = mount_overlay(path);
+	
+	lua_pushboolean(script, status);
+	
+	return 1;
+}
+
+int knUnmountOverlay(lua_State *script) {
+	lua_pushboolean(script, unmount_overlay());
+	
+	return 1;
+}
+
+int knEnableOverlay(lua_State *script) {
+	knRegisterFunc(script, knMountOverlay);
+	knRegisterFunc(script, knUnmountOverlay);
+	
+	return 0;
+}
+
 #else
-#include <sys/stat.h>
 
 /**
  * A single, abstract overlay. The actual backing implementation may be a
@@ -143,11 +181,11 @@ struct Overlay;
 typedef FILE *(*OverlayLoadFunc)(struct Overlay *this, const char *path);
 typedef void (*OverlayReleaseFunc)(struct Overlay *this);
 
-struct Overlay {
+typedef struct Overlay {
 	void *context;
 	OverlayLoadFunc load;
 	OverlayReleaseFunc release;
-}
+} Overlay;
 
 FILE *OverlayLoad(Overlay *this, const char *path, size_t *size) {
 	/**
@@ -171,7 +209,7 @@ FILE *OverlayLoad(Overlay *this, const char *path, size_t *size) {
 		return NULL;
 	}
 	
-	*size = file_stat->st_size;
+	*size = file_stat.st_size;
 	
 	return file;
 }
@@ -190,10 +228,10 @@ void OverlayRelease(Overlay *this) {
 /**
  * Manager to allow mounting multiple overlays at once, in an order.
  */
-struct OverlayManager {
+typedef struct OverlayManager {
 	Overlay **overlay;
 	size_t count;
-};
+} OverlayManager;
 
 inline static void *xrealloc(void *block, size_t size) {
 	if (size == 0) { free(block); return NULL; }
@@ -206,12 +244,14 @@ bool OverlayManagerPush(OverlayManager *this, Overlay *overlay) {
 	 */
 	
 	this->count++;
-	Overlay *overlay_stack = xrealloc(this->overlay, sizeof *this->overlay * this->count);
+	Overlay **overlay_stack = xrealloc(this->overlay, sizeof *this->overlay * this->count);
 	
 	if (!overlay_stack) {
+		OverlayRelease(overlay);
 		return false;
 	}
 	else {
+		overlay_stack[this->count-1] = overlay;
 		this->overlay = overlay_stack;
 		return true;
 	}
@@ -222,8 +262,10 @@ void OverlayManagerPop(OverlayManager *this, Overlay *overlay) {
 	 * Pop an overlay from the top of the stack, releasing it.
 	 */
 	
-	this->count--;
-	OverlayRelease(this->overlay[this->count]);
+	if (this->count > 0) {
+		this->count--;
+		OverlayRelease(this->overlay[this->count]);
+	}
 }
 
 FILE *OverlayManagerLoad(OverlayManager *this, const char *path, size_t *size) {
@@ -265,15 +307,15 @@ bool KNOverlayLoad(QiFileInputStream *this, const char *path) {
 		memset(&this->path, 0, sizeof this->path);
 	}
 	
-	return !!fi;
+	return !!file;
 }
 
 /**
  * Directory type overlays, simple but useful.
  */
-#define JoinPaths(Dest, S1, S2) char *Dest[strlen(S1) + strlen(S2) + 2]; { strcpy(Dest, S1); strcat(Dest, "/"); strcat(Dest, S2); }
+#define JoinPaths(Dest, S1, S2) char Dest[strlen(S1) + strlen(S2) + 2]; { strcpy(Dest, S1); strcat(Dest, "/"); strcat(Dest, S2); }
 
-typedef struct {
+typedef struct DirOverlayState {
 	const char *directory;
 } DirOverlayState;
 
@@ -301,7 +343,7 @@ Overlay *DirOverlayCreate(const char *directory) {
  */
 #define theZip (&((ZipOverlayState *) this->context)->zip)
 
-typedef struct {
+typedef struct ZipOverlayState {
 	mz_zip_archive zip;
 } ZipOverlayState;
 
@@ -362,7 +404,7 @@ Overlay *ZipOverlayCreate(const char *zip_path) {
 
 #define LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS 256
 
-typedef struct {
+typedef struct LuaOverlayState {
 	const char function_name[LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS];
 } LuaOverlayState;
 
@@ -423,44 +465,49 @@ Overlay *LuaOverlayCreate(const char *function_name) {
 	strncpy(((LuaOverlayState *) this->context)->function_name, function_name, LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS);
 	return this;
 }
-#endif
 
 /**
- * ============================================================================
- * Lua functions
- * ============================================================================
+ * Lua interface to the OverlayManager
  */
 
-int knMountOverlay(lua_State *script) {
-	if (lua_gettop(script) < 1) {
-		return 0;
+int knPushOverlay(lua_State *L) {
+	const char *type = luaL_checkstring(L, 1);
+	
+	Overlay *overlay = NULL;
+	
+	if (!strcmp(type, "directory")) {
+		overlay = DirOverlayCreate(luaL_checkstring(L, 2));
+	}
+	else if (!strcmp(type, "zip")) {
+		overlay = ZipOverlayCreate(luaL_checkstring(L, 2));
+	}
+	else if (!strcmp(type, "callback")) {
+		overlay = LuaOverlayCreate(luaL_checkstring(L, 2));
 	}
 	
-	const char *path = lua_tostring(script, 1);
-	
-	if (!path) {
-		return 0;
+	if (overlay) {
+		lua_pushboolean(L, OverlayManagerPush(&gOverlayMan, overlay));
 	}
-	
-	bool status = mount_overlay(path);
-	
-	lua_pushboolean(script, status);
+	else {
+		lua_pushboolean(L, 0);
+	}
 	
 	return 1;
 }
 
-int knUnmountOverlay(lua_State *script) {
-	lua_pushboolean(script, unmount_overlay());
-	
-	return 1;
-}
-
-int knEnableOverlay(lua_State *script) {
-	knRegisterFunc(script, knMountOverlay);
-	knRegisterFunc(script, knUnmountOverlay);
+int knPopOverlay(lua_State *L) {
+	OverlayManagerPop(&gOverlayMan);
 	
 	return 0;
 }
+
+int knEnableOverlay(lua_State *L) {
+	knRegisterFunc(script, knPushOverlay);
+	knRegisterFunc(script, knPopOverlay);
+	
+	return 0;
+}
+#endif
 
 /**
  * ============================================================================
