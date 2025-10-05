@@ -14,12 +14,17 @@ if "--no-regen-header" not in sys.argv:
 status = os.system("ndk-build")
 
 # Copy to test apk
-if not status and len(sys.argv) > 1 and "--upgrade" in sys.argv:
-	apks = os.listdir("/tmp/apk-editor-studio/apk")
+if not status:
+	if "--upgrade" in sys.argv:
+		apks = os.listdir("/tmp/apk-editor-studio/apk")
+		
+		if len(apks) > 0:
+			apk_path = f"/tmp/apk-editor-studio/apk/{apks[0]}"
+			print(f"Upgrade apk at {apk_path}")
+			shutil.copytree("./libs", f"{apk_path}/lib", dirs_exist_ok=True)
+		else:
+			print(f"No APKs to upgrade")
 	
-	if len(apks) > 0:
-		apk_path = f"/tmp/apk-editor-studio/apk/{apks[0]}"
-		print(f"Upgrade apk at {apk_path}")
-		shutil.copytree("./libs", f"{apk_path}/lib", dirs_exist_ok=True)
-	else:
-		print(f"No APKs to upgrade")
+	if "--package" in sys.argv:
+		version = sys.argv[sys.argv.index("--package")+1]
+		shutil.make_archive(f"knshim-r{version}-libs", "zip", "./libs")
