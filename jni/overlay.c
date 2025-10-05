@@ -325,7 +325,7 @@ FILE *DirOverlayLoad(Overlay *this, const char *path) {
 }
 
 void DirOverlayRelease(Overlay *this) {
-	free(this->directory);
+	free(((DirOverlayState *) this->context)->directory);
 }
 
 Overlay *DirOverlayCreate(const char *directory) {
