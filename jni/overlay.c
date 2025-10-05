@@ -226,9 +226,9 @@ void OverlayRelease(Overlay *this) {
 }
 
 #define OverlayAllocate(T, StateType) Overlay *T = malloc(sizeof *T); \
-	if (!T) { return NULL; } else {LogI("%p = malloc(%zu)", T, sizeof *T);} \
+	if (!T) { return NULL; } \
 	T->context = malloc(sizeof(StateType)); \
-	if (!T->context) { free(T); return NULL; } else {LogI("%p = malloc(%zu)", T->context, sizeof(StateType));}
+	if (!T->context) { free(T); return NULL; }
 
 /**
  * Manager to allow mounting multiple overlays at once, in an order.
@@ -248,7 +248,7 @@ bool OverlayManagerPush(OverlayManager *this, Overlay *overlay) {
 	// Important to note: Size can never really reach 0 in this case.
 	Overlay **new_stack = realloc(this->overlay, sizeof *this->overlay * new_count);
 	
-	LogI("%p = realloc(%p, %u)", new_stack, this->overlay, sizeof *this->overlay * new_count);
+	//LogI("%p = realloc(%p, %u)", new_stack, this->overlay, sizeof *this->overlay * new_count);
 	
 	if (!new_stack) {
 		OverlayRelease(overlay);
@@ -362,7 +362,6 @@ FILE *ZipOverlayLoad(Overlay *this, const char *path) {
 	int fileIndex = mz_zip_reader_locate_file(theZip, path, NULL, MZ_ZIP_FLAG_CASE_SENSITIVE);
 	
 	if (fileIndex == -1) {
-		LogI("Failed to find file: %s", path);
 		return NULL;
 	}
 	
@@ -373,12 +372,9 @@ FILE *ZipOverlayLoad(Overlay *this, const char *path) {
 	}
 	
 	if (!mz_zip_reader_extract_to_callback(theZip, fileIndex, ZipOverlayWriteCallback, file, 0)) {
-		LogI("Failed to extract: %s", path);
 		fclose(file);
 		return NULL;
 	}
-	
-	LogI("File %s extracted!", path);
 	
 	fflush(file);
 	rewind(file);
@@ -431,6 +427,8 @@ FILE *LuaOverlayLoad(Overlay *this, const char *path) {
 		return NULL;
 	}
 	
+	lua_pushstring(L, path);
+	
 	if (lua_pcall(L, 1, 1, 0) != 0) {
 		const char *error_msg = lua_tostring(L, -1);
 		LogE("Could not load asset %s backed by function %s: %s", path, function_name, error_msg);
@@ -460,6 +458,9 @@ FILE *LuaOverlayLoad(Overlay *this, const char *path) {
 		lua_pop(L, 1);
 		return NULL;
 	}
+	
+	fflush(file);
+	rewind(file);
 	
 	lua_pop(L, 1);
 	return file;
