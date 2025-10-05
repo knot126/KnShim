@@ -223,7 +223,7 @@ void OverlayRelease(Overlay *this) {
 	free(this);
 }
 
-#define OverlayAllocate(T) { Overlay *T = malloc(sizeof *T); if (!T) { return NULL; } T->context = malloc(sizeof *T->context); if (!T->context) { free(T); return NULL; } }
+#define OverlayAllocate(T) Overlay *T = malloc(sizeof *T); if (!T) { return NULL; } T->context = malloc(sizeof *T->context); if (!T->context) { free(T); return NULL; }
 
 /**
  * Manager to allow mounting multiple overlays at once, in an order.
@@ -257,7 +257,7 @@ bool OverlayManagerPush(OverlayManager *this, Overlay *overlay) {
 	}
 }
 
-void OverlayManagerPop(OverlayManager *this, Overlay *overlay) {
+void OverlayManagerPop(OverlayManager *this) {
 	/**
 	 * Pop an overlay from the top of the stack, releasing it.
 	 */
@@ -316,7 +316,7 @@ bool KNOverlayLoad(QiFileInputStream *this, const char *path) {
 #define JoinPaths(Dest, S1, S2) char Dest[strlen(S1) + strlen(S2) + 2]; { strcpy(Dest, S1); strcat(Dest, "/"); strcat(Dest, S2); }
 
 typedef struct DirOverlayState {
-	const char *directory;
+	char *directory;
 } DirOverlayState;
 
 FILE *DirOverlayLoad(Overlay *this, const char *path) {
@@ -405,36 +405,36 @@ Overlay *ZipOverlayCreate(const char *zip_path) {
 #define LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS 256
 
 typedef struct LuaOverlayState {
-	const char function_name[LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS];
+	char function_name[LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS];
 } LuaOverlayState;
 
 FILE *LuaOverlayLoad(Overlay *this, const char *path) {
-	lua_State *L = *gGame->menuScene->script->state;
+	lua_State *L = *gGame->menuScene->script.state;
 	const char *function_name = ((LuaOverlayState *) this->context)->function_name;
 	
 	lua_getglobal(L, function_name);
 	
 	if (!lua_isfunction(L, -1)) {
 		LogE("Could not load asset %s: %s is not a function", path, function_name);
-		lua_pop(L);
+		lua_pop(L, 1);
 		return NULL;
 	}
 	
 	if (lua_pcall(L, 1, 1, 0) != 0) {
 		const char *error_msg = lua_tostring(L, -1);
 		LogE("Could not load asset %s backed by function %s: %s", path, function_name, error_msg);
-		lua_pop(L);
+		lua_pop(L, 1);
 		return NULL;
 	}
 	
 	if (lua_isnil(L, -1)) {
-		lua_pop(L);
+		lua_pop(L, 1);
 		return NULL;
 	}
 	
 	if (!lua_isstring(L, -1)) {
 		LogE("Could not load asset %s backed by function %s: Did not return a string", path, function_name);
-		lua_pop(L);
+		lua_pop(L, 1);
 		return NULL;
 	}
 	
@@ -446,11 +446,11 @@ FILE *LuaOverlayLoad(Overlay *this, const char *path) {
 	if (fwrite(data, 1, size, file) != size) {
 		LogE("Could not load asset %s backed by function %s: I/O Error", path, function_name);
 		fclose(file);
-		lua_pop(L);
+		lua_pop(L, 1);
 		return NULL;
 	}
 	
-	lua_pop(L);
+	lua_pop(L, 1);
 	return file;
 }
 
@@ -471,18 +471,18 @@ Overlay *LuaOverlayCreate(const char *function_name) {
  */
 
 int knPushOverlay(lua_State *L) {
-	const char *type = luaL_checkstring(L, 1);
+	const char *type = lua_tostring(L, 1);
 	
 	Overlay *overlay = NULL;
 	
 	if (!strcmp(type, "directory")) {
-		overlay = DirOverlayCreate(luaL_checkstring(L, 2));
+		overlay = DirOverlayCreate(lua_tostring(L, 2));
 	}
 	else if (!strcmp(type, "zip")) {
-		overlay = ZipOverlayCreate(luaL_checkstring(L, 2));
+		overlay = ZipOverlayCreate(lua_tostring(L, 2));
 	}
 	else if (!strcmp(type, "callback")) {
-		overlay = LuaOverlayCreate(luaL_checkstring(L, 2));
+		overlay = LuaOverlayCreate(lua_tostring(L, 2));
 	}
 	
 	if (overlay) {
@@ -502,8 +502,8 @@ int knPopOverlay(lua_State *L) {
 }
 
 int knEnableOverlay(lua_State *L) {
-	knRegisterFunc(script, knPushOverlay);
-	knRegisterFunc(script, knPopOverlay);
+	knRegisterFunc(L, knPushOverlay);
+	knRegisterFunc(L, knPopOverlay);
 	
 	return 0;
 }
@@ -523,7 +523,9 @@ bool QiFileInputStream_open_hook(QiFileInputStream *this, char *path) {
 	 */
 	
 	// Try loading from overlay first
+#ifdef OLD_OVERLAYS
 	if (gZip) {
+#endif
 		if (KNOverlayLoad(this, path)) {
 			return true;
 		}
@@ -536,7 +538,9 @@ bool QiFileInputStream_open_hook(QiFileInputStream *this, char *path) {
 		if (KNOverlayLoad(this, path_no_mp3)) {
 			return true;
 		}
+#ifdef OLD_OVERLAYS
 	}
+#endif
 	
 	// Try real assets dir if that doesn't work
 	return QiFileInputStream_open(this, path);
