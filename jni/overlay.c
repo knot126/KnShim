@@ -226,9 +226,9 @@ void OverlayRelease(Overlay *this) {
 }
 
 #define OverlayAllocate(T, StateType) Overlay *T = malloc(sizeof *T); \
-	if (!T) { return NULL; } \
+	if (!T) { return NULL; } else {LogI("%p = malloc(%zu)", T, sizeof *T);} \
 	T->context = malloc(sizeof(StateType)); \
-	if (!T->context) { free(T); return NULL; }
+	if (!T->context) { free(T); return NULL; } else {LogI("%p = malloc(%zu)", T->context, sizeof(StateType));}
 
 /**
  * Manager to allow mounting multiple overlays at once, in an order.
@@ -247,6 +247,8 @@ bool OverlayManagerPush(OverlayManager *this, Overlay *overlay) {
 	
 	// Important to note: Size can never really reach 0 in this case.
 	Overlay **new_stack = realloc(this->overlay, sizeof *this->overlay * new_count);
+	
+	LogI("%p = realloc(%p, %u)", new_stack, this->overlay, sizeof *this->overlay * new_count);
 	
 	if (!new_stack) {
 		OverlayRelease(overlay);
@@ -389,7 +391,7 @@ void ZipOverlayRelease(Overlay *this) {
 }
 
 Overlay *ZipOverlayCreate(const char *zip_path) {
-	OverlayAllocate(this, ZipOverlayCreate);
+	OverlayAllocate(this, ZipOverlayState);
 	mz_zip_zero_struct(theZip);
 	
 	if (!mz_zip_reader_init_file(theZip, zip_path, 0)) {
