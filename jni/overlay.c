@@ -17,6 +17,8 @@
 #include "util.h"
 #include "smashhit.h"
 
+// #define OLD_OVERLAYS
+
 #ifdef OLD_OVERLAYS
 // Zip reading related
 mz_zip_archive *gZip;
@@ -223,7 +225,10 @@ void OverlayRelease(Overlay *this) {
 	free(this);
 }
 
-#define OverlayAllocate(T) Overlay *T = malloc(sizeof *T); if (!T) { return NULL; } T->context = malloc(sizeof *T->context); if (!T->context) { free(T); return NULL; }
+#define OverlayAllocate(T, StateType) Overlay *T = malloc(sizeof *T); \
+	if (!T) { return NULL; } \
+	T->context = malloc(sizeof(StateType)); \
+	if (!T->context) { free(T); return NULL; }
 
 /**
  * Manager to allow mounting multiple overlays at once, in an order.
@@ -233,26 +238,24 @@ typedef struct OverlayManager {
 	size_t count;
 } OverlayManager;
 
-inline static void *xrealloc(void *block, size_t size) {
-	if (size == 0) { free(block); return NULL; }
-	else { return realloc(block, size); }
-}
-
 bool OverlayManagerPush(OverlayManager *this, Overlay *overlay) {
 	/**
 	 * Push a new overlay on top of the stack.
 	 */
 	
-	this->count++;
-	Overlay **overlay_stack = xrealloc(this->overlay, sizeof *this->overlay * this->count);
+	size_t new_count = this->count + 1;
 	
-	if (!overlay_stack) {
+	// Important to note: Size can never really reach 0 in this case.
+	Overlay **new_stack = realloc(this->overlay, sizeof *this->overlay * new_count);
+	
+	if (!new_stack) {
 		OverlayRelease(overlay);
 		return false;
 	}
 	else {
-		overlay_stack[this->count-1] = overlay;
-		this->overlay = overlay_stack;
+		new_stack[new_count-1] = overlay;
+		this->overlay = new_stack;
+		this->count = new_count;
 		return true;
 	}
 }
@@ -262,7 +265,7 @@ void OverlayManagerPop(OverlayManager *this) {
 	 * Pop an overlay from the top of the stack, releasing it.
 	 */
 	
-	if (this->count > 0) {
+	if (this->count != 0) {
 		this->count--;
 		OverlayRelease(this->overlay[this->count]);
 	}
@@ -329,7 +332,7 @@ void DirOverlayRelease(Overlay *this) {
 }
 
 Overlay *DirOverlayCreate(const char *directory) {
-	OverlayAllocate(this);
+	OverlayAllocate(this, DirOverlayState);
 	((DirOverlayState *) this->context)->directory = strdup(directory);
 	this->load = DirOverlayLoad;
 	this->release = DirOverlayRelease;
@@ -341,7 +344,7 @@ Overlay *DirOverlayCreate(const char *directory) {
 /**
  * ZIP-file based overlays, useful for loading resources in packs.
  */
-#define theZip (&((ZipOverlayState *) this->context)->zip)
+#define theZip (&(((ZipOverlayState *) this->context)->zip))
 
 typedef struct ZipOverlayState {
 	mz_zip_archive zip;
@@ -352,9 +355,12 @@ static size_t ZipOverlayWriteCallback(void *pOpaque, mz_uint64 file_ofs, const v
 }
 
 FILE *ZipOverlayLoad(Overlay *this, const char *path) {
-	int fileIndex = mz_zip_reader_locate_file(theZip, path, NULL, 0);
+	// LogI("this=%p theZip=%p path=%s", this, theZip, path);
+	
+	int fileIndex = mz_zip_reader_locate_file(theZip, path, NULL, MZ_ZIP_FLAG_CASE_SENSITIVE);
 	
 	if (fileIndex == -1) {
+		LogI("Failed to find file: %s", path);
 		return NULL;
 	}
 	
@@ -365,9 +371,12 @@ FILE *ZipOverlayLoad(Overlay *this, const char *path) {
 	}
 	
 	if (!mz_zip_reader_extract_to_callback(theZip, fileIndex, ZipOverlayWriteCallback, file, 0)) {
+		LogI("Failed to extract: %s", path);
 		fclose(file);
 		return NULL;
 	}
+	
+	LogI("File %s extracted!", path);
 	
 	fflush(file);
 	rewind(file);
@@ -380,7 +389,7 @@ void ZipOverlayRelease(Overlay *this) {
 }
 
 Overlay *ZipOverlayCreate(const char *zip_path) {
-	OverlayAllocate(this);
+	OverlayAllocate(this, ZipOverlayCreate);
 	mz_zip_zero_struct(theZip);
 	
 	if (!mz_zip_reader_init_file(theZip, zip_path, 0)) {
@@ -459,7 +468,7 @@ void LuaOverlayRelease(Overlay *this) {
 }
 
 Overlay *LuaOverlayCreate(const char *function_name) {
-	OverlayAllocate(this);
+	OverlayAllocate(this, LuaOverlayState);
 	this->load = LuaOverlayLoad;
 	this->release = LuaOverlayRelease;
 	strncpy(((LuaOverlayState *) this->context)->function_name, function_name, LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS);
