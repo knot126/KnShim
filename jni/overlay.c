@@ -335,7 +335,6 @@ FILE *ZipOverlayLoad(Overlay *this, const char *path) {
 
 void ZipOverlayRelease(Overlay *this) {
 	mz_zip_reader_end(theZip);
-	free(theZip);
 }
 
 Overlay *ZipOverlayCreate(const char *zip_path) {
@@ -361,12 +360,68 @@ Overlay *ZipOverlayCreate(const char *zip_path) {
  * available.
  */
 
+#define LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS 256
+
 typedef struct {
-	const char function_name[256];
+	const char function_name[LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS];
 } LuaOverlayState;
 
 FILE *LuaOverlayLoad(Overlay *this, const char *path) {
 	lua_State *L = *gGame->menuScene->script->state;
+	const char *function_name = ((LuaOverlayState *) this->context)->function_name;
+	
+	lua_getglobal(L, function_name);
+	
+	if (!lua_isfunction(L, -1)) {
+		LogE("Could not load asset %s: %s is not a function", path, function_name);
+		lua_pop(L);
+		return NULL;
+	}
+	
+	if (lua_pcall(L, 1, 1, 0) != 0) {
+		const char *error_msg = lua_tostring(L, -1);
+		LogE("Could not load asset %s backed by function %s: %s", path, function_name, error_msg);
+		lua_pop(L);
+		return NULL;
+	}
+	
+	if (lua_isnil(L, -1)) {
+		lua_pop(L);
+		return NULL;
+	}
+	
+	if (!lua_isstring(L, -1)) {
+		LogE("Could not load asset %s backed by function %s: Did not return a string", path, function_name);
+		lua_pop(L);
+		return NULL;
+	}
+	
+	size_t size;
+	const char *data = lua_tolstring(L, -1, &size);
+	
+	FILE *file = tmpfile();
+	
+	if (fwrite(data, 1, size, file) != size) {
+		LogE("Could not load asset %s backed by function %s: I/O Error", path, function_name);
+		fclose(file);
+		lua_pop(L);
+		return NULL;
+	}
+	
+	lua_pop(L);
+	return file;
+}
+
+void LuaOverlayRelease(Overlay *this) {
+	/* nop */
+}
+
+Overlay *LuaOverlayCreate(const char *function_name) {
+	OverlayAllocate(this);
+	this->load = LuaOverlayLoad;
+	this->release = LuaOverlayRelease;
+	strncpy(((LuaOverlayState *) this->context)->function_name, function_name, LUA_OVERLAY_FUNCTION_NAME_MAX_CHARS);
+	return this;
 }
 #endif
 

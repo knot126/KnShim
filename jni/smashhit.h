@@ -40,7 +40,7 @@ typedef struct ResMan {
 		// no idea what this does... void* used for explicit padding, would be
 		// fine without probably.
 		void *u0;
-		bool u1;
+		char u1;
 	};
 	_ResManHashTable resource_map;
 	QiString u3;
