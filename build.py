@@ -5,15 +5,31 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Write new build date
 if "--no-regen-header" not in sys.argv:
 	new_data = f"#define SHIM_BUILD_DATE {datetime.today().strftime('%Y%m%d')}\n"
 	Path("jni/build_date.h").write_text(new_data)
+	
+	with open("jni/modules.txt", "r") as f:
+		enum = ""
+		enables = ""
+		i = 0
+		
+		for line in f.readlines():
+			line = line.strip()
+			enum += f"\tKN_{line.upper()}_BIT = (1 << {i}),\n"
+			enables += f"\tint knEnable{line}(lua_State *script);\\\n"
+			enables += f"\tif ((gDisabledModules & KN_{line.upper()}_BIT) == 0) {{ knEnable{line}(script); }}\\\n"
+			enables += f"\tknLuaPushEnum(script, KN_{line.upper()}_BIT);\\\n"
+			i += 1
+		
+		Path("jni/enablement.h").write_text(f"""enum {{
+{enum}}};
 
-# Build
+#define KNSHIM_ENABLE() \\
+{enables}""")
+
 status = os.system("ndk-build")
 
-# Copy to test apk
 if not status:
 	if "--upgrade" in sys.argv:
 		apks = os.listdir("/tmp/apk-editor-studio/apk")

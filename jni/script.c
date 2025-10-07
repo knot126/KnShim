@@ -12,19 +12,13 @@
 #include "smashhit.h"
 #include "util.h"
 
-int knEnableLog(lua_State *script);
-int knEnablePatching(lua_State *script);
-int knEnableHttp(lua_State *script);
-int knEnableSystem(lua_State *script);
-int knEnableRegistry(lua_State *script);
-int knEnableDatabase(lua_State *script);
-int knEnableFile(lua_State *script);
-int knEnableGamectl(lua_State *script);
-int knEnableOverlay(lua_State *script);
-int knEnableShaders(lua_State *script);
+#include "enablement.h"
 
-extern char *gAndroidInternalDataPath;
-extern char *gAndroidExternalDataPath;
+int gDisabledModules = 0;
+
+int knSetDisabled(lua_State *script) {
+	gDisabledModules = lua_tonumber(script, 1);
+}
 
 #define LOAD_CORE_LIB(L, NAME, FUNC) lua_pushcfunction(L, FUNC); lua_pushstring(L, NAME); lua_call(L, 1, 0);
 
@@ -39,21 +33,19 @@ int load_lua_libs(lua_State *script) {
 	LOAD_CORE_LIB(script, LUA_DBLIBNAME, luaopen_debug);
 	
 	// Load KnShim extensions
-	knEnableLog(script);
-	knEnablePatching(script);
-	knEnableHttp(script);
-	knEnableSystem(script);
-	knEnableRegistry(script);
-	knEnableDatabase(script);
-	knEnableFile(script);
-	knEnableGamectl(script);
-	knEnableOverlay(script);
-	knEnableShaders(script);
+	KNSHIM_ENABLE();
+	
+	if (!gDisabledModules) {
+		knRegisterFunc(script, knSetDisabled);
+	}
 	
 	return 0;
 }
 
 void KNLoadLua(void);
+
+extern char *gAndroidInternalDataPath;
+extern char *gAndroidExternalDataPath;
 
 const char *KNInitLua(void) {
 	// NOTE: We used to ship our own copy of Lua built into the shim, but this
