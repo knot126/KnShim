@@ -14,31 +14,34 @@ enum {
 #define KNSHIM_ENABLE() \
 	int knEnableLog(lua_State *script);\
 	if ((gDisabledModules & KN_LOG_BIT) == 0) { knEnableLog(script); }\
-	knLuaPushEnum(script, KN_LOG_BIT);\
 	int knEnablePatching(lua_State *script);\
 	if ((gDisabledModules & KN_PATCHING_BIT) == 0) { knEnablePatching(script); }\
-	knLuaPushEnum(script, KN_PATCHING_BIT);\
 	int knEnableHttp(lua_State *script);\
 	if ((gDisabledModules & KN_HTTP_BIT) == 0) { knEnableHttp(script); }\
-	knLuaPushEnum(script, KN_HTTP_BIT);\
 	int knEnableSystem(lua_State *script);\
 	if ((gDisabledModules & KN_SYSTEM_BIT) == 0) { knEnableSystem(script); }\
-	knLuaPushEnum(script, KN_SYSTEM_BIT);\
 	int knEnableRegistry(lua_State *script);\
 	if ((gDisabledModules & KN_REGISTRY_BIT) == 0) { knEnableRegistry(script); }\
-	knLuaPushEnum(script, KN_REGISTRY_BIT);\
 	int knEnableDatabase(lua_State *script);\
 	if ((gDisabledModules & KN_DATABASE_BIT) == 0) { knEnableDatabase(script); }\
-	knLuaPushEnum(script, KN_DATABASE_BIT);\
 	int knEnableFile(lua_State *script);\
 	if ((gDisabledModules & KN_FILE_BIT) == 0) { knEnableFile(script); }\
-	knLuaPushEnum(script, KN_FILE_BIT);\
 	int knEnableGamectl(lua_State *script);\
 	if ((gDisabledModules & KN_GAMECTL_BIT) == 0) { knEnableGamectl(script); }\
-	knLuaPushEnum(script, KN_GAMECTL_BIT);\
 	int knEnableOverlay(lua_State *script);\
 	if ((gDisabledModules & KN_OVERLAY_BIT) == 0) { knEnableOverlay(script); }\
-	knLuaPushEnum(script, KN_OVERLAY_BIT);\
 	int knEnableShaders(lua_State *script);\
 	if ((gDisabledModules & KN_SHADERS_BIT) == 0) { knEnableShaders(script); }\
+
+
+#define KNSHIM_PUSH_ENABLE_ENUM() \
+	knLuaPushEnum(script, KN_LOG_BIT);\
+	knLuaPushEnum(script, KN_PATCHING_BIT);\
+	knLuaPushEnum(script, KN_HTTP_BIT);\
+	knLuaPushEnum(script, KN_SYSTEM_BIT);\
+	knLuaPushEnum(script, KN_REGISTRY_BIT);\
+	knLuaPushEnum(script, KN_DATABASE_BIT);\
+	knLuaPushEnum(script, KN_FILE_BIT);\
+	knLuaPushEnum(script, KN_GAMECTL_BIT);\
+	knLuaPushEnum(script, KN_OVERLAY_BIT);\
 	knLuaPushEnum(script, KN_SHADERS_BIT);\

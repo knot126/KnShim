@@ -12,6 +12,7 @@ if "--no-regen-header" not in sys.argv:
 	with open("jni/modules.txt", "r") as f:
 		enum = ""
 		enables = ""
+		pushenum = ""
 		i = 0
 		
 		for line in f.readlines():
@@ -19,14 +20,17 @@ if "--no-regen-header" not in sys.argv:
 			enum += f"\tKN_{line.upper()}_BIT = (1 << {i}),\n"
 			enables += f"\tint knEnable{line}(lua_State *script);\\\n"
 			enables += f"\tif ((gDisabledModules & KN_{line.upper()}_BIT) == 0) {{ knEnable{line}(script); }}\\\n"
-			enables += f"\tknLuaPushEnum(script, KN_{line.upper()}_BIT);\\\n"
+			pushenum += f"\tknLuaPushEnum(script, KN_{line.upper()}_BIT);\\\n"
 			i += 1
 		
 		Path("jni/enablement.h").write_text(f"""enum {{
 {enum}}};
 
 #define KNSHIM_ENABLE() \\
-{enables}""")
+{enables}
+
+#define KNSHIM_PUSH_ENABLE_ENUM() \\
+{pushenum}""")
 
 status = os.system("ndk-build")
 

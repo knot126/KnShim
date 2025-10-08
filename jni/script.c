@@ -18,6 +18,7 @@ int gDisabledModules = 0;
 
 int knSetDisabled(lua_State *script) {
 	gDisabledModules = lua_tonumber(script, 1);
+	return 0;
 }
 
 #define LOAD_CORE_LIB(L, NAME, FUNC) lua_pushcfunction(L, FUNC); lua_pushstring(L, NAME); lua_call(L, 1, 0);
@@ -36,6 +37,7 @@ int load_lua_libs(lua_State *script) {
 	KNSHIM_ENABLE();
 	
 	if (!gDisabledModules) {
+		KNSHIM_PUSH_ENABLE_ENUM();
 		knRegisterFunc(script, knSetDisabled);
 	}
 	
