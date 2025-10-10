@@ -17,7 +17,7 @@
 int gDisabledModules = 0;
 
 int knSetDisabled(lua_State *script) {
-	gDisabledModules = lua_tonumber(script, 1);
+	gDisabledModules = lua_tointeger(script, 1);
 	return 0;
 }
 

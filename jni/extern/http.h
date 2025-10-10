@@ -52,142 +52,9 @@ void http_release(http_t *http);
 
 #endif /* http_hpp */
 
-/** 
-
-http.hpp
-========
-
-Basic HTTP protocol implementation over sockets (no https).
-
-
-Example
--------
-
-    #define HTTP_IMPLEMENTATION
-    #include "http.h"
-
-    int main( int argc, char** argv ) {
-        http_t* request = http_get( "http://www.mattiasgustavsson.com/http_test.txt", NULL );
-        if( !request ) {
-            printf( "Invalid request.\n" );
-            return 1;
-        }
-
-        http_status_t status = HTTP_STATUS_PENDING;
-        int prev_size = -1;
-        while( status == HTTP_STATUS_PENDING ) {
-            status = http_process( request );
-            if( prev_size != (int) request->response_size ) {
-                printf( "%d byte(s) received.\n", (int) request->response_size );
-                prev_size = (int) request->response_size;
-            }
-        }
-
-        if( status == HTTP_STATUS_FAILED ) {
-            printf( "HTTP request failed (%d): %s.\n", request->status_code, request->reason_phrase );
-            http_release( request );
-            return 1;
-        }
-    
-        printf( "\nContent type: %s\n\n%s\n", request->content_type, (char const*)request->response_data );
-        http_release( request );
-        return 0;
-    }
-
-
-API Documentation
------------------
-
-http.h is a small library for making http requests from a web server. It only supports GET and POST http commands, and
-is designed for when you just need a very basic way of communicating over http. http.h does not support https 
-connections, just plain http.
-
-http.h is a single-header library, and does not need any .lib files or other binaries, or any build scripts. To use 
-it, you just include http.h to get the API declarations. To get the definitions, you must include http.h from 
-*one* single C or C++ file, and #define the symbol `HTTP_IMPLEMENTATION` before you do. 
-
-
-#### Custom memory allocators
-
-For working memory and to store the retrieved data, http.h needs to do dynamic allocation by calling `malloc`. Programs 
-might want to keep track of allocations done, or use custom defined pools to allocate memory from. http.h allows 
-for specifying custom memory allocation functions for `malloc` and `free`. This is done with the following code:
-
-    #define HTTP_IMPLEMENTATION
-    #define HTTP_MALLOC( ctx, size ) ( my_custom_malloc( ctx, size ) )
-    #define HTTP_FREE( ctx, ptr ) ( my_custom_free( ctx, ptr ) )
-    #include "http.h"
-
-where `my_custom_malloc` and `my_custom_free` are your own memory allocation/deallocation functions. The `ctx` parameter
-is an optional parameter of type `void*`. When `http_get` or `http_post` is called, , you can pass in a `memctx` 
-parameter, which can be a pointer to anything you like, and which will be passed through as the `ctx` parameter to every 
-`HTTP_MALLOC`/`HTTP_FREE` call. For example, if you are doing memory tracking, you can pass a pointer to your 
-tracking data as `memctx`, and in your custom allocation/deallocation function, you can cast the `ctx` param back to the 
-right type, and access the tracking data.
-
-If no custom allocator is defined, http.h will default to `malloc` and `free` from the C runtime library.
-
-
-http_get
---------
-
-    http_t* http_get( char const* url, void* memctx )
-
-Initiates a http GET request with the specified url. `url` is a zero terminated string containing the request location,
-just like you would type it in a browser, for example `http://www.mattiasgustavsson.com:80/http_test.txt`. `memctx` is a 
-pointer to user defined data which will be passed through to the custom HTTP_MALLOC/HTTP_FREE calls. It can be NULL if 
-no user defined data is needed. Returns a `http_t` instance, which needs to be passed to `http_process` to process the
-request. When the request is finished (or have failed), the returned `http_t` instance needs to be released by calling
-`http_release`. If the request was invalid, `http_get` returns NULL.
-
-
-http_post
----------
-
-    http_t* http_post( char const* url, void const* data, size_t size, void* memctx )
-
-Initiates a http POST request with the specified url. `url` is a zero terminated string containing the request location,
-just like you would type it in a browser, for example `http://www.mattiasgustavsson.com:80/http_test.txt`. `data` is a
-pointer to the data to be sent along as part of the request, and `size` is the number of bytes to send. `memctx` is a 
-pointer to user defined data which will be passed through to the custom HTTP_MALLOC/HTTP_FREE calls. It can be NULL if 
-no user defined data is needed. Returns a `http_t` instance, which needs to be passed to `http_process` to process the
-request. When the request is finished (or have failed), the returned `http_t` instance needs to be released by calling
-`http_release`. If the request was invalid, `http_post` returns NULL.
-
-
-http_process
-------------
-
-    http_status_t http_process( http_t* http )
-
-http.h uses non-blocking sockets, so after a request have been made by calling either `http_get` or `http_post`, you 
-have to keep calling `http_process` for as long as it returns `HTTP_STATUS_PENDING`. You can call it from a loop which 
-does other work too, for example from inside a game loop or from a loop which calls `http_process` on multiple requests.
-If the request fails, `http_process` returns `HTTP_STATUS_FAILED`, and the fields `status_code` and `reason_phrase` may
-contain more details (for example, status code can be 404 if the requested resource was not found on the server). If the 
-request completes successfully, it returns `HTTP_STATUS_COMPLETED`. In this case, the `http_t` instance will contain 
-details about the result. `status_code` and `reason_phrase` contains the details about the result, as specified in the
-HTTP protocol. `content_type` contains the MIME type for the returns resource, for example `text/html` for a normal web
-page. `response_data` is the pointer to the received data, and `resonse_size` is the number of bytes it contains. In the
-case when the response data is in text format, http.h ensures there is a zero terminator placed immediately after the
-response data block, so it is safe to interpret the resonse data as a `char*`. Note that the data size in this case will 
-be the length of the data without the additional zero terminator.
-
-
-http_release
-------------
-
-    void http_release( http_t* http )
-
-Releases the resources acquired by `http_get` or `http_post`. Should be call when you are finished with the request.
-
-*/
-
-/*
-----------------------
-    IMPLEMENTATION
-----------------------
-*/
+/******************
+ * IMPLEMENTATION *
+ ******************/
 
 #ifdef HTTP_IMPLEMENTATION
 
@@ -231,14 +98,42 @@ Releases the resources acquired by `http_get` or `http_post`. Should be call whe
     #define HTTP_FREE( ctx, ptr ) ( free( ptr ) )
 #endif
 
+#ifdef HTTP_ENABLE_MBEDTLS
+    #include "mbedtls/ctr_drbg.h"
+    #include "mbedtls/entropy.h"
+    #include "mbedtls/net_sockets.h"
+    #include "mbedtls/ssl.h"
+    
+    typedef http_secure_socket_t {
+        mbedtls_net_context net;
+        mbedtls_entropy_context entroy;
+        mbedtls_ctr_drbg_context drbg;
+        mbedtls_ssl_context ssl;
+        mbedtls_ssl_config conf;
+    } http_secure_socket_t;
+#endif
+
+typedef enum http_state_t {
+    HTTP_STATE_UNKNOWN = 0,
+    HTTP_STATE_CONNECT_PENDING,
+    HTTP_STATE_SETTING_UP_TLS,
+    HTTP_STATE_SENDING_REQUEST,
+    HTTP_STATE_RECIEVING_RESPONSE,
+    HTTP_STATE_COMPLETE,
+} http_state_t;
+
 typedef struct http_internal_t {
     /* keep this at the top because http_internal_t* can be cast to http_t* */ 
     http_t http;
     
     void* memctx;
     HTTP_SOCKET socket;
-    int connect_pending;
-    int request_sent;
+#ifdef HTTP_ENABLE_MBEDTLS
+    http_secure_socket_t *secure_socket;
+#endif
+    // int connect_pending;
+    // int request_sent;
+    http_state_t state;
     char address[ 256 ];
     char request_header[ 256 ];
     char* request_header_large;
@@ -251,12 +146,13 @@ typedef struct http_internal_t {
 } http_internal_t;
 
 
-static int http_internal_parse_url( char const* url, char* address, size_t address_capacity, char* port, 
-    size_t port_capacity, char const** resource )
-    {
-    // make sure url starts with http://
-    if( strncmp( url, "http://", 7 ) != 0 ) return 0;
-    url += 7; // skip http:// part of url
+static int http_internal_parse_url(char const* url, int *secure, char* address, size_t address_capacity, char* port, size_t port_capacity, char const** resource ) {
+    // make sure url starts with http:// or https://
+    // if( strncmp( url, "http://", 7 ) != 0 ) return 0;
+    // url += 7; // skip http:// part of url
+    if (!strncmp(url, "http://", 7)) { *secure = 0; url += 7; }
+    else if (!strncmp(url, "https://", 8)) { *secure = 1; url += 8; }
+    else { return 0; }
     
     size_t url_len = strlen( url );
 
@@ -357,11 +253,50 @@ HTTP_SOCKET http_internal_connect( char const* address, char const* port )
                 return HTTP_INVALID_SOCKET;
                 }
         #endif
-        }
+    }
 
     freeaddrinfo( addri );
     return sock;
+}
+
+
+#define CHECK(EXPR) if (!(EXPR)) {HTTP_FREE(memctx, self); return NULL;}
+
+#ifdef HTTP_ENABLE_MBEDTLS
+http_secure_socket_t *http_internal_secure_connect(const char * const address, const char * const port, void *memctx) {
+    // Seems helpful: https://x509errors.org/guides/mbedtls
+    http_secure_socket_t *self = HTTP_MALLOC(memctx, sizeof *self);
+    
+    if (!self) {
+        return NULL;
     }
+    
+    // TLS setup
+    mbedtls_net_init(&self->net);
+    mbedtls_entropy_init(&self->entropy);
+    mbedtls_ctr_drbg_init(&self->drbg);
+    mbedtls_ssl_init(&self->ssl);
+    mbedtls_ssl_config_init(&self->conf);
+    
+    CHECK(mbedtls_net_set_nonblock(&self->net));
+    CHECK(mbedtls_ctr_drbg_seed(&self->drbg, mbedtls_entropy_func, &self->entropy, NULL, 0));
+    CHECK(mbedtls_ssl_conf_rng(&self->conf, mbedtls_ctr_drbg_random, &self->drbg));
+    CHECK(mbedtls_ssl_setup(&self->ssl, &self->conf));
+    CHECK(mbedtls_ssl_config_defaults(&self->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT));
+    
+    mbedtls_ssl_conf_min_version(&self->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
+    // TODO: MBEDTLS_SSL_VERIFY_REQUIRED!!! For testing SSL certs aren't
+    // verified right now.
+    mbedtls_ssl_conf_authmode(&self->conf, MBEDTLS_SSL_VERIFY_NONE);
+    
+    CHECK(mbedtls_ssl_set_hostname(&self->ssl, address));
+    
+    // Connection
+    CHECK(mbedtls_net_connect(&self->net, address, port, MBEDTLS_NET_PROTO_TCP));
+    
+    return self;
+}
+#endif
 
     
 static http_internal_t* http_internal_create( size_t request_data_size, void* memctx )
@@ -376,8 +311,9 @@ static http_internal_t* http_internal_create( size_t request_data_size, void* me
     internal->http.response_data = NULL;
 
     internal->memctx = memctx;
-    internal->connect_pending = 1;
-    internal->request_sent = 0;
+    // internal->connect_pending = 1;
+    // internal->request_sent = 0;
+    internal->state = HTTP_STATE_CONNECT_PENDING;
     
     strcpy( internal->reason_phrase, "" );
     internal->http.reason_phrase = internal->reason_phrase;
@@ -418,13 +354,20 @@ http_t *http_request(const char *method, char const *url, const void *data, size
         if( WSAStartup( MAKEWORD( 1, 0 ), &wsa_data ) != 0 ) return 0;
     #endif
     
+    int secure;
     char address[ 256 ];
     char port[ 16 ];
     char const* path;
     
-    if (http_internal_parse_url( url, address, sizeof( address ), port, sizeof( port ), &path ) == 0) {
+    if (http_internal_parse_url(url, &secure, address, sizeof( address ), port, sizeof( port ), &path ) == 0) {
         return NULL;
     }
+    
+#ifndef HTTP_ENABLE_MBEDTLS
+    if (secure) {
+        return NULL;
+    }
+#endif
 
     HTTP_SOCKET socket = http_internal_connect(address, port);
     
@@ -502,8 +445,8 @@ http_status_t http_process(http_t *http) {
         return http->status;
     }
     
-    if( internal->connect_pending )
-        {   
+    // If we're pending connect(), update status for it
+    if (internal->state == HTTP_STATE_CONNECT_PENDING) {   
         fd_set sockets_to_check; 
         FD_ZERO( &sockets_to_check );
         #pragma warning( push )
@@ -511,39 +454,42 @@ http_status_t http_process(http_t *http) {
         FD_SET( internal->socket, &sockets_to_check );
         #pragma warning( pop )
         struct timeval timeout; timeout.tv_sec = 0; timeout.tv_usec = 0;
+        
         // check if socket is ready for send
-        if( select( (int)( internal->socket + 1 ), NULL, &sockets_to_check, NULL, &timeout ) == 1 ) 
-            {
+        if (select((int)(internal->socket + 1), NULL, &sockets_to_check, NULL, &timeout) == 1 ) {
             int opt = -1;
             socklen_t len = sizeof( opt ); 
             if( getsockopt( internal->socket, SOL_SOCKET, SO_ERROR, (char*)( &opt ), &len) >= 0 && opt == 0 ) 
-                internal->connect_pending = 0; // if it is, we're connected
-            }
+                internal->state = HTTP_STATE_SENDING_REQUEST; // if it is, we're connected
         }
+    }
+    
+    // Still pending?
+    if (internal->state == HTTP_STATE_CONNECT_PENDING) {
+        return http->status;
+    }
 
-    if( internal->connect_pending ) return http->status;
-
-    if( !internal->request_sent )
-        {
+    if (internal->state == HTTP_STATE_SENDING_REQUEST) {
         char const* request_header = internal->request_header_large ? 
             internal->request_header_large : internal->request_header;
-        if( send( internal->socket, request_header, (int) strlen( request_header ), 0 ) == -1 )
-            {
+        
+        if (send(internal->socket, request_header, (int) strlen(request_header), 0 ) == -1) {
             http->status = HTTP_STATUS_FAILED;
             return http->status;
-            }
-        if( internal->request_data_size )
-            {
-            int res = send( internal->socket, (char const*)internal->request_data, (int) internal->request_data_size, 0 );
-            if( res == -1 )
-                {
+        }
+        
+        if (internal->request_data_size) {
+            int res = send(internal->socket, (char const*)internal->request_data, (int) internal->request_data_size, 0);
+            
+            if (res == -1) {
                 http->status = HTTP_STATUS_FAILED;
                 return http->status;
-                }
             }
-        internal->request_sent = 1;
-        return http->status;
         }
+        
+        internal->state = HTTP_STATE_RECIEVING_RESPONSE;
+        return http->status;
+    }
 
     // check if socket is ready for recv
     fd_set sockets_to_check; 
@@ -672,6 +618,8 @@ http_status_t http_process(http_t *http) {
             // the size returned will be the string without this extra zero
             // terminator.
             ( (char*)http->response_data )[ http->response_size ] = 0;
+            
+            internal->state = HTTP_STATE_COMPLETE;
             
             return http->status;
         }
