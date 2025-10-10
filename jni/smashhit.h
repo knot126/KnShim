@@ -7,9 +7,17 @@
 struct lua_State;
 typedef struct lua_State lua_State;
 
+typedef struct QiVec2 {
+	float x, y;
+} QiVec2;
+
 typedef struct QiVec3 {
 	float x, y, z;
 } QiVec3;
+
+typedef struct QiColor {
+	float r, g, b, a;
+} QiColor;
 
 typedef struct QiString {
 	char *data;
@@ -174,7 +182,7 @@ typedef struct QiFileOutputStream {
 
 typedef struct Game {
 	void *device;
-	void *input;
+	QiInput *input;
 	void *display;
 	void *renderer;
 	ResMan *resman;
