@@ -3,7 +3,7 @@
  */
 
 #include <math.h>
-#include "utils.h"
+#include "util.h"
 #include "lua_utils.h"
 
 #define gInput (gGame->input)

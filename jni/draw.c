@@ -4,7 +4,7 @@
  */
 
 #include <math.h>
-#include "utils.h"
+#include "util.h"
 #include "lua_utils.h"
 
 void (*Gfx_drawLine)(Gfx *this,QiVec3 *pointA,QiVec3 *pointB,QiColor *colour,float param_5);
@@ -20,7 +20,7 @@ int knDrawLine(lua_State *L) {
 
 int knDrawRectangle(lua_State *L) {
 	QiVec2 a = knLuaToVec2(L, 1);
-	QiVec2 a = knLuaToVec2(L, 1);
+	QiVec2 b = knLuaToVec2(L, 1);
 	QiColor color = knLuaToColor(L, 3);
 	Gfx_drawRectangle(gGame->gfx, &a, &b, &color);
 	return 0;
