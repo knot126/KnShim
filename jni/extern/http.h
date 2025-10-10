@@ -104,13 +104,13 @@ void http_release(http_t *http);
     #include "mbedtls/net_sockets.h"
     #include "mbedtls/ssl.h"
     
-    typedef http_secure_socket_t {
+    typedef http_tls_context_t {
         mbedtls_net_context net;
         mbedtls_entropy_context entroy;
         mbedtls_ctr_drbg_context drbg;
         mbedtls_ssl_context ssl;
         mbedtls_ssl_config conf;
-    } http_secure_socket_t;
+    } http_tls_context_t;
 #endif
 
 typedef enum http_state_t {
@@ -129,16 +129,16 @@ typedef struct http_internal_t {
     void* memctx;
     HTTP_SOCKET socket;
 #ifdef HTTP_ENABLE_MBEDTLS
-    http_secure_socket_t *secure_socket;
+    http_tls_context_t *tls_context;
 #endif
-    // int connect_pending;
-    // int request_sent;
     http_state_t state;
     char address[ 256 ];
     char request_header[ 256 ];
     char* request_header_large;
+    size_t request_header_sent;
     void* request_data;
     size_t request_data_size;
+    size_t request_data_sent;
     char reason_phrase[ 1024 ];
     size_t data_size;
     size_t data_capacity;
@@ -259,13 +259,12 @@ HTTP_SOCKET http_internal_connect( char const* address, char const* port )
     return sock;
 }
 
-
+#ifdef HTTP_ENABLE_MBEDTLS
 #define CHECK(EXPR) if (!(EXPR)) {HTTP_FREE(memctx, self); return NULL;}
 
-#ifdef HTTP_ENABLE_MBEDTLS
-http_secure_socket_t *http_internal_secure_connect(const char * const address, const char * const port, void *memctx) {
+http_tls_context_t *http_internal_create_tls_context(const char * const address, HTTP_SOCKET socket, void *memctx) {
     // Seems helpful: https://x509errors.org/guides/mbedtls
-    http_secure_socket_t *self = HTTP_MALLOC(memctx, sizeof *self);
+    http_tls_context_t *self = HTTP_MALLOC(memctx, sizeof *self);
     
     if (!self) {
         return NULL;
@@ -273,12 +272,11 @@ http_secure_socket_t *http_internal_secure_connect(const char * const address, c
     
     // TLS setup
     mbedtls_net_init(&self->net);
-    mbedtls_entropy_init(&self->entropy);
-    mbedtls_ctr_drbg_init(&self->drbg);
     mbedtls_ssl_init(&self->ssl);
     mbedtls_ssl_config_init(&self->conf);
+    mbedtls_entropy_init(&self->entropy);
+    mbedtls_ctr_drbg_init(&self->drbg);
     
-    CHECK(mbedtls_net_set_nonblock(&self->net));
     CHECK(mbedtls_ctr_drbg_seed(&self->drbg, mbedtls_entropy_func, &self->entropy, NULL, 0));
     CHECK(mbedtls_ssl_conf_rng(&self->conf, mbedtls_ctr_drbg_random, &self->drbg));
     CHECK(mbedtls_ssl_setup(&self->ssl, &self->conf));
@@ -291,36 +289,48 @@ http_secure_socket_t *http_internal_secure_connect(const char * const address, c
     
     CHECK(mbedtls_ssl_set_hostname(&self->ssl, address));
     
-    // Connection
-    CHECK(mbedtls_net_connect(&self->net, address, port, MBEDTLS_NET_PROTO_TCP));
+    CHECK(mbedtls_net_set_nonblock(&self->net));
+    mbedtls_ssl_set_bio(&self->ssl, &self->net, mbedtls_net_send, mbedtls_net_recv, NULL);
     
     return self;
+}
+
+void http_internal_release_tls_context(http_tls_context_t *self, void *memctx) {
+    mbedtls_ssl_close_notify(&self->ssl);
+    
+    mbedtls_net_free(&self->net);
+    mbedtls_ssl_free(&self->net);
+    mbedtls_ssl_config_free(&self->conf);
+    mbedtls_entropy_free(&self->entropy);
+    mbedtls_ctr_drbg_free(&self->drbg);
+    
+    HTTP_FREE(memctx, self);
 }
 #endif
 
     
-static http_internal_t* http_internal_create( size_t request_data_size, void* memctx )
-    {
-    http_internal_t* internal = (http_internal_t*) HTTP_MALLOC( memctx, sizeof( http_internal_t ) + request_data_size );
-
+static http_internal_t *http_internal_create(size_t request_data_size, void* memctx) {
+    http_internal_t *internal = (http_internal_t *) HTTP_MALLOC(memctx, sizeof (http_internal_t) + request_data_size);
+    
+    if (!internal) {
+        return NULL;
+    }
+    
+    memset(internal, 0, sizeof *internal);
+    
     internal->http.status = HTTP_STATUS_PENDING;
-    internal->http.status_code = 0;
-    internal->http.num_headers = 0;
-    internal->http.headers = NULL;
-    internal->http.response_size = 0;
-    internal->http.response_data = NULL;
-
+    
     internal->memctx = memctx;
-    // internal->connect_pending = 1;
-    // internal->request_sent = 0;
     internal->state = HTTP_STATE_CONNECT_PENDING;
     
-    strcpy( internal->reason_phrase, "" );
     internal->http.reason_phrase = internal->reason_phrase;
-
-    internal->data_size = 0;
+    
     internal->data_capacity = 64 * 1024;
     internal->data = HTTP_MALLOC( memctx, internal->data_capacity );
+    
+    if (!internal->data) {
+        return NULL;
+    }
     
     internal->request_data = NULL;
     internal->request_data_size = 0;
@@ -375,8 +385,21 @@ http_t *http_request(const char *method, char const *url, const void *data, size
         return NULL;
     }
     
-    http_internal_t* internal = http_internal_create( size, memctx );
+    http_internal_t* internal = http_internal_create(size, memctx);
     internal->socket = socket;
+    
+#ifdef HTTP_ENABLE_MBEDTLS
+    if (secure) {
+        internal->tls_context = http_internal_create_tls_context(address, memctx);
+        
+        if (!internal->tls_context) {
+            close(internal->socket);
+            free(internal->data);
+            free(internal);
+            return NULL;
+        }
+    }
+#endif
 
     char* request_header = NULL;
     size_t request_header_len = 64 + strlen(method) + strlen(path) + strlen(address) + strlen(port) + http_approximate_headers_size(headers, num_headers);
@@ -455,12 +478,23 @@ http_status_t http_process(http_t *http) {
         #pragma warning( pop )
         struct timeval timeout; timeout.tv_sec = 0; timeout.tv_usec = 0;
         
-        // check if socket is ready for send
+        // check if socket is ready for send; if it is, we're connected
         if (select((int)(internal->socket + 1), NULL, &sockets_to_check, NULL, &timeout) == 1 ) {
             int opt = -1;
-            socklen_t len = sizeof( opt ); 
-            if( getsockopt( internal->socket, SOL_SOCKET, SO_ERROR, (char*)( &opt ), &len) >= 0 && opt == 0 ) 
-                internal->state = HTTP_STATE_SENDING_REQUEST; // if it is, we're connected
+            socklen_t len = sizeof(opt);
+            
+            if (getsockopt( internal->socket, SOL_SOCKET, SO_ERROR, (char*)( &opt ), &len) >= 0 && opt == 0) {
+#ifdef HTTP_ENABLE_MBEDTLS
+                if (internal->tls_context) {
+                    internal->state = HTTP_STATE_SETTING_UP_TLS;
+                }
+                else {
+#endif
+                    internal->state = HTTP_STATE_SENDING_REQUEST;
+#ifdef HTTP_ENABLE_MBEDTLS
+                }
+#endif
+            }
         }
     }
     
@@ -468,23 +502,100 @@ http_status_t http_process(http_t *http) {
     if (internal->state == HTTP_STATE_CONNECT_PENDING) {
         return http->status;
     }
-
-    if (internal->state == HTTP_STATE_SENDING_REQUEST) {
-        char const* request_header = internal->request_header_large ? 
-            internal->request_header_large : internal->request_header;
+    
+#ifdef HTTP_ENABLE_MBEDTLS
+    if (internal->state == HTTP_STATE_SETTING_UP_TLS) {
+        int result = mbedtls_ssl_handshake(&internal->tls_context->ssl);
         
-        if (send(internal->socket, request_header, (int) strlen(request_header), 0 ) == -1) {
+        if (result == 0) {
+            http->state = HTTP_STATE_SENDING_REQUEST;
+        }
+        else if (result == MBEDTLS_ERR_SSL_WANT_READ ||
+            result == MBEDTLS_ERR_SSL_WANT_WRITE ||
+            result == MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS ||
+            result == MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS) {
+            // Just waiting...
+            return http->status;
+        }
+        else {
             http->status = HTTP_STATUS_FAILED;
             return http->status;
         }
+    }
+#endif
+
+    if (internal->state == HTTP_STATE_SENDING_REQUEST) {
+        char const* request_header = internal->request_header_large ? internal->request_header_large : internal->request_header;
+        const size_t request_header_len = strlen(request_header);
         
-        if (internal->request_data_size) {
-            int res = send(internal->socket, (char const*)internal->request_data, (int) internal->request_data_size, 0);
-            
-            if (res == -1) {
+#ifdef HTTP_ENABLE_MBEDTLS
+        if (internal->tls_context) {
+            if (internal->request_header_sent < request_header_len) {
+                int status = mbedtls_ssl_write(internal->tls_context->ssl, request_header_len - internal->request_header_sent, request_header + internal->request_header_sent);
+                
+                if (status < 0) {
+                    if (status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE && status != MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS && status != MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS) {
+                        http->status = HTTP_STATUS_FAILED;
+                        return http->status;
+                    }
+                    else {
+                        return http->status;
+                    }
+                }
+                else {
+                    internal->request_header_sent += status;
+                    
+                    if (internal->request_header_sent < request_header_len) {
+                        return http->status;
+                    }
+                }
+            }
+        }
+        else {
+#endif
+            if (send(internal->socket, request_header, request_header_len, 0 ) == -1) {
                 http->status = HTTP_STATUS_FAILED;
                 return http->status;
             }
+#ifdef HTTP_ENABLE_MBEDTLS
+        }
+#endif
+        
+        if (internal->request_data_size) {
+#ifdef HTTP_ENABLE_MBEDTLS
+            if (internal->tls_context) {
+                if (internal->request_data_sent < internal->request_data_size) {
+                    int status = mbedtls_ssl_write(internal->tls_context->ssl, internal->request_data_size - internal->request_data_sent, internal->request_data + internal->request_data_sent);
+                    
+                    if (status < 0) {
+                        if (status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE && status != MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS && status != MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS) {
+                            http->status = HTTP_STATUS_FAILED;
+                            return http->status;
+                        }
+                        else {
+                            return http->status;
+                        }
+                    }
+                    else {
+                        internal->request_data_sent += status;
+                        
+                        if (internal->request_data_sent < internal->request_data_size) {
+                            return http->status;
+                        }
+                    }
+                }
+            }
+            else {
+#endif
+                int res = send(internal->socket, (char const*)internal->request_data, (int) internal->request_data_size, 0);
+                
+                if (res == -1) {
+                    http->status = HTTP_STATUS_FAILED;
+                    return http->status;
+                }
+#ifdef HTTP_ENABLE_MBEDTLS
+            }
+#endif
         }
         
         internal->state = HTTP_STATE_RECIEVING_RESPONSE;
@@ -500,9 +611,39 @@ http_status_t http_process(http_t *http) {
     #pragma warning( pop )
     struct timeval timeout; timeout.tv_sec = 0; timeout.tv_usec = 0;
     
-    while( select( (int)( internal->socket + 1 ), &sockets_to_check, NULL, NULL, &timeout ) == 1 ) {
-        char buffer[ 4096 ];
-        int size = recv( internal->socket, buffer, sizeof( buffer ), 0 );
+    while (1) {
+#ifdef HTTP_ENABLE_MBEDTLS
+        if (internal->tls_context) {
+            if (mbedtls_ssl_check_pending(internal->tls_context->ssl) != 1) {
+                break;
+            }
+        }
+        else {
+#endif
+            if (select( (int)( internal->socket + 1 ), &sockets_to_check, NULL, NULL, &timeout ) != 1) {
+                break;
+            }
+#ifdef HTTP_ENABLE_MBEDTLS
+        }
+#endif
+        
+        char buffer[4096];
+        int size;
+        
+#ifdef HTTP_ENABLE_MBEDTLS
+        if (internal->tls_context) {
+            size = mbedtls_ssl_read(internal->tls_context->ssl, buffer, sizeof buffer);
+            
+            if (size < 0) {
+                size = -1;
+            }
+        }
+        else {
+#endif
+            size = recv(internal->socket, buffer, sizeof buffer, 0);
+#ifdef HTTP_ENABLE_MBEDTLS
+        }
+#endif
     
         if (size == -1) {
             http->status = HTTP_STATUS_FAILED;
@@ -668,12 +809,22 @@ const char *http_get_header(http_t *http, const char *name, size_t nth) {
 
 void http_release(http_t *http) {
     http_internal_t* internal = (http_internal_t*) http;
+    void *memctx = internal->memctx;
     
+#ifdef HTTP_ENABLE_MBEDTLS
+    if (internal->tls_context) {
+        http_internal_release_tls_context(internal->tls_context, memctx);
+    }
+    else {
+#endif
     #ifdef _WIN32
         closesocket( internal->socket );
     #else
         close( internal->socket );
     #endif
+#ifdef HTTP_ENABLE_MBEDTLS
+    }
+#endif
 
     if (internal->request_header_large) { HTTP_FREE( memctx, internal->request_header_large ); }
     if (http->headers) { HTTP_FREE(memctx, http->headers); }
