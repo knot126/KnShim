@@ -104,9 +104,9 @@ void http_release(http_t *http);
     #include "mbedtls/net_sockets.h"
     #include "mbedtls/ssl.h"
     
-    typedef http_tls_context_t {
+    typedef struct http_tls_context_t {
         mbedtls_net_context net;
-        mbedtls_entropy_context entroy;
+        mbedtls_entropy_context entropy;
         mbedtls_ctr_drbg_context drbg;
         mbedtls_ssl_context ssl;
         mbedtls_ssl_config conf;
@@ -278,7 +278,7 @@ http_tls_context_t *http_internal_create_tls_context(const char * const address,
     mbedtls_ctr_drbg_init(&self->drbg);
     
     CHECK(mbedtls_ctr_drbg_seed(&self->drbg, mbedtls_entropy_func, &self->entropy, NULL, 0));
-    CHECK(mbedtls_ssl_conf_rng(&self->conf, mbedtls_ctr_drbg_random, &self->drbg));
+    mbedtls_ssl_conf_rng(&self->conf, mbedtls_ctr_drbg_random, &self->drbg);
     CHECK(mbedtls_ssl_setup(&self->ssl, &self->conf));
     CHECK(mbedtls_ssl_config_defaults(&self->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT));
     
@@ -299,7 +299,7 @@ void http_internal_release_tls_context(http_tls_context_t *self, void *memctx) {
     mbedtls_ssl_close_notify(&self->ssl);
     
     mbedtls_net_free(&self->net);
-    mbedtls_ssl_free(&self->net);
+    mbedtls_ssl_free(&self->ssl);
     mbedtls_ssl_config_free(&self->conf);
     mbedtls_entropy_free(&self->entropy);
     mbedtls_ctr_drbg_free(&self->drbg);
@@ -390,7 +390,7 @@ http_t *http_request(const char *method, char const *url, const void *data, size
     
 #ifdef HTTP_ENABLE_MBEDTLS
     if (secure) {
-        internal->tls_context = http_internal_create_tls_context(address, memctx);
+        internal->tls_context = http_internal_create_tls_context(address, socket, memctx);
         
         if (!internal->tls_context) {
             close(internal->socket);
@@ -508,7 +508,7 @@ http_status_t http_process(http_t *http) {
         int result = mbedtls_ssl_handshake(&internal->tls_context->ssl);
         
         if (result == 0) {
-            http->state = HTTP_STATE_SENDING_REQUEST;
+            internal->state = HTTP_STATE_SENDING_REQUEST;
         }
         else if (result == MBEDTLS_ERR_SSL_WANT_READ ||
             result == MBEDTLS_ERR_SSL_WANT_WRITE ||
@@ -531,7 +531,7 @@ http_status_t http_process(http_t *http) {
 #ifdef HTTP_ENABLE_MBEDTLS
         if (internal->tls_context) {
             if (internal->request_header_sent < request_header_len) {
-                int status = mbedtls_ssl_write(internal->tls_context->ssl, request_header_len - internal->request_header_sent, request_header + internal->request_header_sent);
+                int status = mbedtls_ssl_write(&internal->tls_context->ssl, (const unsigned char *) request_header + internal->request_header_sent, request_header_len - internal->request_header_sent);
                 
                 if (status < 0) {
                     if (status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE && status != MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS && status != MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS) {
@@ -565,7 +565,7 @@ http_status_t http_process(http_t *http) {
 #ifdef HTTP_ENABLE_MBEDTLS
             if (internal->tls_context) {
                 if (internal->request_data_sent < internal->request_data_size) {
-                    int status = mbedtls_ssl_write(internal->tls_context->ssl, internal->request_data_size - internal->request_data_sent, internal->request_data + internal->request_data_sent);
+                    int status = mbedtls_ssl_write(&internal->tls_context->ssl, internal->request_data + internal->request_data_sent, internal->request_data_size - internal->request_data_sent);
                     
                     if (status < 0) {
                         if (status != MBEDTLS_ERR_SSL_WANT_READ && status != MBEDTLS_ERR_SSL_WANT_WRITE && status != MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS && status != MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS) {
@@ -614,7 +614,7 @@ http_status_t http_process(http_t *http) {
     while (1) {
 #ifdef HTTP_ENABLE_MBEDTLS
         if (internal->tls_context) {
-            if (mbedtls_ssl_check_pending(internal->tls_context->ssl) != 1) {
+            if (mbedtls_ssl_check_pending(&internal->tls_context->ssl) != 1) {
                 break;
             }
         }
@@ -632,7 +632,7 @@ http_status_t http_process(http_t *http) {
         
 #ifdef HTTP_ENABLE_MBEDTLS
         if (internal->tls_context) {
-            size = mbedtls_ssl_read(internal->tls_context->ssl, buffer, sizeof buffer);
+            size = mbedtls_ssl_read(&internal->tls_context->ssl, (unsigned char *) buffer, sizeof buffer);
             
             if (size < 0) {
                 size = -1;
