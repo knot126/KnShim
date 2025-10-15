@@ -98,6 +98,10 @@ void http_release(http_t *http);
     #define HTTP_FREE( ctx, ptr ) ( free( ptr ) )
 #endif
 
+#ifndef HTTP_LOG
+    #define HTTP_LOG(...)
+#endif
+
 #ifdef HTTP_ENABLE_MBEDTLS
     #include "mbedtls/ctr_drbg.h"
     #include "mbedtls/entropy.h"
@@ -169,8 +173,8 @@ static int http_internal_parse_url(char const* url, int *secure, char* address, 
 
     // check if there's a port defined
     char const* port_end = address_end;
-    if( *address_end == ':' )
-        {
+    
+    if (*address_end == ':') {
         ++address_end;
         port_end = strchr( address_end, '/' );
         if( !port_end ) port_end = address_end + strlen( address_end );
@@ -178,13 +182,18 @@ static int http_internal_parse_url(char const* url, int *secure, char* address, 
         if( port_len >= port_capacity ) return 0;
         memcpy( port, address_end, port_len );
         port[ port_len ] = 0;
+    }
+    else {
+        // use default port; 80 for http, 433 for https
+        if (*secure) {
+            if (port_capacity <= 3) return 0;
+            strcpy(port, "433");
         }
-    else
-        {
-        // use default port number 80
-        if( port_capacity <= 2 ) return 0;
-        strcpy( port, "80" );
+        else {
+            if (port_capacity <= 2) return 0;
+            strcpy(port, "80");
         }
+    }
 
 
     *resource = port_end;
@@ -260,7 +269,7 @@ HTTP_SOCKET http_internal_connect( char const* address, char const* port )
 }
 
 #ifdef HTTP_ENABLE_MBEDTLS
-#define CHECK(EXPR) if (!(EXPR)) {HTTP_FREE(memctx, self); return NULL;}
+#define CHECK(EXPR) { int result = (EXPR); if (result) { HTTP_LOG("MbedTLS error: %s result=%d", #EXPR, result); HTTP_FREE(memctx, self); return NULL; } }
 
 http_tls_context_t *http_internal_create_tls_context(const char * const address, HTTP_SOCKET socket, void *memctx) {
     // Seems helpful: https://x509errors.org/guides/mbedtls
@@ -272,22 +281,30 @@ http_tls_context_t *http_internal_create_tls_context(const char * const address,
     
     // TLS setup
     mbedtls_net_init(&self->net);
-    mbedtls_ssl_init(&self->ssl);
     mbedtls_ssl_config_init(&self->conf);
+    mbedtls_ssl_init(&self->ssl);
     mbedtls_entropy_init(&self->entropy);
     mbedtls_ctr_drbg_init(&self->drbg);
     
+    // Seed RNG
     CHECK(mbedtls_ctr_drbg_seed(&self->drbg, mbedtls_entropy_func, &self->entropy, NULL, 0));
-    mbedtls_ssl_conf_rng(&self->conf, mbedtls_ctr_drbg_random, &self->drbg);
-    CHECK(mbedtls_ssl_setup(&self->ssl, &self->conf));
+    
+    // Set socket fd
+    self->net.fd = socket;
+    
+    // Setup config
     CHECK(mbedtls_ssl_config_defaults(&self->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT));
     
+    mbedtls_ssl_conf_rng(&self->conf, mbedtls_ctr_drbg_random, &self->drbg);
     mbedtls_ssl_conf_min_version(&self->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
     // TODO: MBEDTLS_SSL_VERIFY_REQUIRED!!! For testing SSL certs aren't
     // verified right now.
     mbedtls_ssl_conf_authmode(&self->conf, MBEDTLS_SSL_VERIFY_NONE);
     
-    CHECK(mbedtls_ssl_set_hostname(&self->ssl, address));
+    CHECK(mbedtls_ssl_setup(&self->ssl, &self->conf));
+    
+    // TODO when MBEDTLS_SSL_VERIFY_REQUIRED is implemented
+    // CHECK(mbedtls_ssl_set_hostname(&self->ssl, address));
     
     CHECK(mbedtls_net_set_nonblock(&self->net));
     mbedtls_ssl_set_bio(&self->ssl, &self->net, mbedtls_net_send, mbedtls_net_recv, NULL);
@@ -614,7 +631,8 @@ http_status_t http_process(http_t *http) {
     while (1) {
 #ifdef HTTP_ENABLE_MBEDTLS
         if (internal->tls_context) {
-            if (mbedtls_ssl_check_pending(&internal->tls_context->ssl) != 1) {
+            // if (mbedtls_ssl_check_pending(&internal->tls_context->ssl) != 1) {
+            if (mbedtls_net_poll(&internal->tls_context->net, MBEDTLS_NET_POLL_READ, 0) != MBEDTLS_NET_POLL_READ) {
                 break;
             }
         }
