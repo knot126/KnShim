@@ -42,7 +42,11 @@ typedef struct http_t {
     void* response_data;
 } http_t;
 
+#ifndef HTTP_ENABLE_MBEDTLS
 http_t *http_request(const char *method, char const *url, const void *data, size_t size, const http_header_t *headers, size_t num_headers, void *memctx);
+#else
+http_t *http_request(const char *method, char const *url, const void *data, size_t size, const http_header_t *headers, size_t num_headers, const unsigned char *cert_data, size_t cert_data_size, void *memctx);
+#endif
 
 http_status_t http_process(http_t *http);
 
@@ -114,6 +118,7 @@ void http_release(http_t *http);
         mbedtls_ctr_drbg_context drbg;
         mbedtls_ssl_context ssl;
         mbedtls_ssl_config conf;
+        mbedtls_x509_crt cert;
     } http_tls_context_t;
 #endif
 
@@ -269,9 +274,20 @@ HTTP_SOCKET http_internal_connect( char const* address, char const* port )
 }
 
 #ifdef HTTP_ENABLE_MBEDTLS
-#define CHECK(EXPR) { int result = (EXPR); if (result) { HTTP_LOG("MbedTLS error: %s result=%d", #EXPR, result); HTTP_FREE(memctx, self); return NULL; } }
 
-http_tls_context_t *http_internal_create_tls_context(const char * const address, HTTP_SOCKET socket, void *memctx) {
+#define FREE_CTX(self) {\
+    mbedtls_net_free(&self->net);\
+    mbedtls_ssl_free(&self->ssl);\
+    mbedtls_ssl_config_free(&self->conf);\
+    mbedtls_entropy_free(&self->entropy);\
+    mbedtls_ctr_drbg_free(&self->drbg);\
+    mbedtls_x509_crt_free(&self->cert);\
+    HTTP_FREE(memctx, self);\
+}\
+
+#define CHECK(EXPR) { int result = (EXPR); if (result) { HTTP_LOG("MbedTLS error: %s result=%d", #EXPR, result); FREE_CTX(self); return NULL; } }
+
+http_tls_context_t *http_internal_create_tls_context(const char * const address, HTTP_SOCKET socket, const unsigned char *cert_data, size_t cert_data_size, void *memctx) {
     // Seems helpful: https://x509errors.org/guides/mbedtls
     http_tls_context_t *self = HTTP_MALLOC(memctx, sizeof *self);
     
@@ -285,6 +301,7 @@ http_tls_context_t *http_internal_create_tls_context(const char * const address,
     mbedtls_ssl_init(&self->ssl);
     mbedtls_entropy_init(&self->entropy);
     mbedtls_ctr_drbg_init(&self->drbg);
+    mbedtls_x509_crt_init(&self->cert);
     
     // Seed RNG
     CHECK(mbedtls_ctr_drbg_seed(&self->drbg, mbedtls_entropy_func, &self->entropy, NULL, 0));
@@ -297,14 +314,21 @@ http_tls_context_t *http_internal_create_tls_context(const char * const address,
     
     mbedtls_ssl_conf_rng(&self->conf, mbedtls_ctr_drbg_random, &self->drbg);
     mbedtls_ssl_conf_min_version(&self->conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
-    // TODO: MBEDTLS_SSL_VERIFY_REQUIRED!!! For testing SSL certs aren't
-    // verified right now.
-    mbedtls_ssl_conf_authmode(&self->conf, MBEDTLS_SSL_VERIFY_NONE);
+    
+    if (cert_data) {
+        CHECK(mbedtls_x509_crt_parse(&self->cert, cert_data, cert_data_size));
+        mbedtls_ssl_conf_ca_chain(&self->conf, &self->cert, NULL);
+        mbedtls_ssl_conf_authmode(&self->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+    }
+    else {
+        mbedtls_ssl_conf_authmode(&self->conf, MBEDTLS_SSL_VERIFY_NONE);
+    }
     
     CHECK(mbedtls_ssl_setup(&self->ssl, &self->conf));
     
-    // TODO when MBEDTLS_SSL_VERIFY_REQUIRED is implemented
-    // CHECK(mbedtls_ssl_set_hostname(&self->ssl, address));
+    if (cert_data) {
+        CHECK(mbedtls_ssl_set_hostname(&self->ssl, address));
+    }
     
     CHECK(mbedtls_net_set_nonblock(&self->net));
     mbedtls_ssl_set_bio(&self->ssl, &self->net, mbedtls_net_send, mbedtls_net_recv, NULL);
@@ -314,14 +338,7 @@ http_tls_context_t *http_internal_create_tls_context(const char * const address,
 
 void http_internal_release_tls_context(http_tls_context_t *self, void *memctx) {
     mbedtls_ssl_close_notify(&self->ssl);
-    
-    mbedtls_net_free(&self->net);
-    mbedtls_ssl_free(&self->ssl);
-    mbedtls_ssl_config_free(&self->conf);
-    mbedtls_entropy_free(&self->entropy);
-    mbedtls_ctr_drbg_free(&self->drbg);
-    
-    HTTP_FREE(memctx, self);
+    FREE_CTX(self);
 }
 #endif
 
@@ -375,7 +392,11 @@ static size_t http_approximate_headers_size(const http_header_t *headers, size_t
 
 #define TEMP_LINE_LENGTH 4096
 
+#ifdef HTTP_ENABLE_MBEDTLS
+http_t *http_request(const char *method, char const *url, const void *data, size_t size, const http_header_t *headers, size_t num_headers, const unsigned char *cert_data, size_t cert_data_size, void *memctx) {
+#else
 http_t *http_request(const char *method, char const *url, const void *data, size_t size, const http_header_t *headers, size_t num_headers, void *memctx) {
+#endif
     #ifdef _WIN32
         WSADATA wsa_data;
         if( WSAStartup( MAKEWORD( 1, 0 ), &wsa_data ) != 0 ) return 0;
@@ -407,7 +428,7 @@ http_t *http_request(const char *method, char const *url, const void *data, size
     
 #ifdef HTTP_ENABLE_MBEDTLS
     if (secure) {
-        internal->tls_context = http_internal_create_tls_context(address, socket, memctx);
+        internal->tls_context = http_internal_create_tls_context(address, socket, cert_data, cert_data_size, memctx);
         
         if (!internal->tls_context) {
             close(internal->socket);
@@ -432,7 +453,7 @@ http_t *http_request(const char *method, char const *url, const void *data, size
     
     request_header[0] = '\0';
     
-    int default_http_port = (strcmp(port, "80") == 0);
+    int default_http_port = secure ? (strcmp(port, "433") == 0) : (strcmp(port, "80") == 0);
     
     char temp_line[TEMP_LINE_LENGTH] = {};
     

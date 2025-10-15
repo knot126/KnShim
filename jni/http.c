@@ -12,6 +12,12 @@
 
 #include "util.h"
 
+struct {
+	bool allow_without_cert;
+	unsigned char *cert_data;
+	size_t cert_data_size;
+} gHttps;
+
 typedef struct {
 	http_t *context;
 } knHttpContext;
@@ -120,6 +126,11 @@ int knHttpRequest(lua_State *script) {
 		return 0;
 	}
 	
+	if (!memcmp("https://", url, 8) && !gHttps.allow_without_cert && !gHttps.cert_data) {
+		luaL_error(script, "Certificate verification set to required but no HTTPS certificate has been installed");
+		return 0;
+	}
+	
 	size_t body_size = 0;
 	const char *body = lua_tolstring(script, 3, &body_size);
 	
@@ -130,7 +141,7 @@ int knHttpRequest(lua_State *script) {
 		fillHeaders(script, 4, headers, num_headers);
 	}
 	
-	http_t *request = http_request(method, url, body, body_size, num_headers ? headers : NULL, num_headers, NULL);
+	http_t *request = http_request(method, url, body, body_size, num_headers ? headers : NULL, num_headers, gHttps.cert_data, gHttps.cert_data_size, NULL);
 	
 	if (!request) {
 		luaL_error(script, "Could not create request object");
@@ -346,9 +357,7 @@ int knHttpRelease(lua_State *script) {
 	
 	return 0;
 }
-// END HTTP
 
-// START HTTP EXTRAS
 const char *NXExtractArchiveFromBuffer(const char *location, size_t size, const void *buf);
 
 int knHttpExtractNxArchive(lua_State *script) {
@@ -389,7 +398,45 @@ int knHttpExtractNxArchive(lua_State *script) {
 	
 	return 1;
 }
-// END HTTP EXTRAS
+
+int knHttpsCert(lua_State *L) {
+	if (lua_gettop(L) == 0) {
+		free(gHttps.cert_data);
+		gHttps.cert_data = NULL;
+		gHttps.cert_data_size = 0;
+	}
+	
+	size_t cert_size;
+	const char *cert = lua_tolstring(L, 1, &cert_size);
+	
+	if (!cert) {
+		luaL_error(L, "Certifiate data is a nil value or not convertable to a string; if you loaded from an asset, maybe that asset doesn't exist?");
+	}
+	
+	unsigned char *new_cert_buf = malloc(cert_size);
+	
+	if (!new_cert_buf) {
+		luaL_error(L, "Could not allocate new cert buffer!");
+		return 0;
+	}
+	
+	memcpy(new_cert_buf, cert, cert_size);
+	free(gHttps.cert_data);
+	gHttps.cert_data = new_cert_buf;
+	gHttps.cert_data_size = cert_size;
+	
+	return 0;
+}
+
+int knHttpsNoCert(lua_State *L) {
+	const char *magic = lua_tostring(L, 1);
+	
+	if (magic && !strcmp(magic, "The foxes whispher in your ear: \"Here lies dangerous code!\"")) {
+		gHttps.allow_without_cert = true;
+	}
+	
+	return 0;
+}
 
 int knEnableHttp(lua_State *script) {
 	lua_register(script, "knHttpRequest", knHttpRequest);
@@ -401,6 +448,8 @@ int knEnableHttp(lua_State *script) {
 	lua_register(script, "knHttpErrorCode", knHttpErrorCode);
 	lua_register(script, "knHttpRelease", knHttpRelease);
 	lua_register(script, "knHttpExtractNxArchive", knHttpExtractNxArchive);
+	lua_register(script, "knHttpsCert", knHttpsCert);
+	lua_register(script, "knHttpsNoCert", knHttpsNoCert);
 	lua_pushinteger(script, KN_HTTP_PENDING); lua_setglobal(script, "KN_HTTP_PENDING");
 	lua_pushinteger(script, KN_HTTP_DONE); lua_setglobal(script, "KN_HTTP_DONE");
 	lua_pushinteger(script, KN_HTTP_ERROR); lua_setglobal(script, "KN_HTTP_ERROR");
