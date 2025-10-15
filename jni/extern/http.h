@@ -631,7 +631,6 @@ http_status_t http_process(http_t *http) {
     while (1) {
 #ifdef HTTP_ENABLE_MBEDTLS
         if (internal->tls_context) {
-            // if (mbedtls_ssl_check_pending(&internal->tls_context->ssl) != 1) {
             if (mbedtls_net_poll(&internal->tls_context->net, MBEDTLS_NET_POLL_READ, 0) != MBEDTLS_NET_POLL_READ) {
                 break;
             }
