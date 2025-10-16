@@ -673,6 +673,11 @@ http_status_t http_process(http_t *http) {
             size = mbedtls_ssl_read(&internal->tls_context->ssl, (unsigned char *) buffer, sizeof buffer);
             
             if (size < 0) {
+                if (size == MBEDTLS_ERR_SSL_WANT_READ || size == MBEDTLS_ERR_SSL_WANT_WRITE || size == MBEDTLS_ERR_SSL_ASYNC_IN_PROGRESS || size == MBEDTLS_ERR_SSL_CRYPTO_IN_PROGRESS) {
+                    return http->status;
+                }
+                
+                HTTP_LOG("mbedtls_ssl_read error: %d", size);
                 size = -1;
             }
         }
