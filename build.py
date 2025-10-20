@@ -21,8 +21,6 @@ if "--no-regen-header" not in sys.argv:
 			info = line.strip().split()
 			name = info[0]
 			
-			print(f"egkam: {game}")
-			
 			if game in info[1]:
 				enum += f"\tKN_{name.upper()}_BIT = (1 << {i}),\n"
 				enables += f"\tint knEnable{name}(lua_State *script);\\\n"

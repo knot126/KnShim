@@ -49,6 +49,8 @@ static AAsset *load_main_shared_object(struct android_app *app, const void **dat
 
 bool KNInitEarlyCore(void);
 
+#include "build_date.h"
+
 void android_main(struct android_app *app) {
 	// Set gApp to android app structure
 	gApp = app;
@@ -58,7 +60,7 @@ void android_main(struct android_app *app) {
 		return;
 	}
 	else {
-		LogI("Early shim successful, app sdk = %d, device sdk = %d", KNGetAppSDK(), KNGetDeviceSDK());
+		LogI("KnShim %d (%s for %s); App SDK %d, Device SDK %d", SHIM_BUILD_DATE, KN_GAME_STRING, KN_ARCH_STRING, KNGetAppSDK(), KNGetDeviceSDK());
 	}
 	
 	// Create an instance of Leaf for loading the main binary
@@ -78,11 +80,11 @@ void android_main(struct android_app *app) {
 	AAsset *asset = load_main_shared_object(app, &data, &length);
 	
 	if (!asset) {
-		LogF("Failed to load libsmashhit.so from shim native dir");
+		LogF("Failed to load game shared object from shim native dir");
 		return;
 	}
 	else {
-		LogI("Loaded libsmashhit.so from native directory");
+		LogI("Loaded game shared object from native directory");
 	}
 	
 	// Load from the buffer we just read
