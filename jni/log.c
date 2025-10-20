@@ -5,6 +5,8 @@
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
 
+#include "util.h"
+
 // LOG
 int knLog(lua_State *script) {
 	int args = lua_gettop(script);
@@ -18,7 +20,7 @@ int knLog(lua_State *script) {
 	int level = (args == 2) ? lua_tointeger(script, 1) : ANDROID_LOG_INFO;
 	
 	if (msg) {
-		__android_log_write(level, "smashhit", msg);
+		__android_log_write(level, KN_GAME_STRING, msg);
 	}
 	else {
 		return luaL_error(script, "Message is NULL");

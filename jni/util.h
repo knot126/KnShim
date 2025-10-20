@@ -9,6 +9,12 @@
 
 #define TAG "knshim"
 
+#ifdef GRANNY
+#define KN_GAME_STRING "grannysmith"
+#else
+#define KN_GAME_STRING "smashhit"
+#endif
+
 #if defined(__arm__)
 #define KN_ARCH_STRING "armeabi-v7a"
 #define KN_RET 0xe12fff1e

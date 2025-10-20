@@ -1,12 +1,12 @@
-Log
-Patching
-Http
-System
-Registry
-Database
-File
-Gamectl
-Overlay
-Shaders
-Input
-Draw
+Log SG
+Patching SG
+Http SG
+System SG
+Registry SG
+Database SG
+File SG
+Gamectl S
+Overlay S
+Shaders SG
+Input S
+Draw S

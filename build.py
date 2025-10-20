@@ -5,6 +5,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+game = "G" if "--granny" in sys.argv else "S"
+
 if "--no-regen-header" not in sys.argv:
 	new_data = f"#define SHIM_BUILD_DATE {datetime.today().strftime('%Y%m%d')}\n"
 	Path("jni/build_date.h").write_text(new_data)
@@ -16,12 +18,17 @@ if "--no-regen-header" not in sys.argv:
 		i = 0
 		
 		for line in f.readlines():
-			line = line.strip()
-			enum += f"\tKN_{line.upper()}_BIT = (1 << {i}),\n"
-			enables += f"\tint knEnable{line}(lua_State *script);\\\n"
-			enables += f"\tif ((gDisabledModules & KN_{line.upper()}_BIT) == 0) {{ knEnable{line}(script); }}\\\n"
-			pushenum += f"\tknLuaPushEnum(script, KN_{line.upper()}_BIT);\\\n"
-			i += 1
+			info = line.strip().split()
+			name = info[0]
+			
+			print(f"egkam: {game}")
+			
+			if game in info[1]:
+				enum += f"\tKN_{name.upper()}_BIT = (1 << {i}),\n"
+				enables += f"\tint knEnable{name}(lua_State *script);\\\n"
+				enables += f"\tif ((gDisabledModules & KN_{name.upper()}_BIT) == 0) {{ knEnable{name}(script); }}\\\n"
+				pushenum += f"\tknLuaPushEnum(script, KN_{name.upper()}_BIT);\\\n"
+				i += 1
 		
 		Path("jni/enablement.h").write_text(f"""enum {{
 {enum}}};

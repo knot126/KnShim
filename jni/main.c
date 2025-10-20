@@ -4,6 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef GRANNY
+#warning "Granny smith builds are not reliable yet!"
+#endif
+
 #define LEAF_IMPLEMENTATION
 #include "extern/leaf.h"
 #undef LEAF_IMPLEMENTATION
@@ -21,15 +25,17 @@ ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitCore,
 	KNInitLua,
 	KNDatabaseInit,
+#ifndef GRANNY
 	KNOverlayInit,
+#endif
 	NULL,
 };
 
-AAsset *load_libsmashhit(struct android_app *app, const void **data, size_t *length) {
+static AAsset *load_main_shared_object(struct android_app *app, const void **data, size_t *length) {
 	// Read libsmashhit.so
 	AAssetManager *asset_manager = app->activity->assetManager;
 	
-	AAsset *asset = AAssetManager_open(asset_manager, "native/" KN_ARCH_STRING "/libsmashhit.so.mp3", AASSET_MODE_BUFFER);
+	AAsset *asset = AAssetManager_open(asset_manager, "native/" KN_ARCH_STRING "/lib" KN_GAME_STRING ".so.mp3", AASSET_MODE_BUFFER);
 	
 	if (!asset) {
 		return NULL;
@@ -69,7 +75,7 @@ void android_main(struct android_app *app) {
 	// Load the contents of LSH
 	const void *data;
 	size_t length;
-	AAsset *asset = load_libsmashhit(app, &data, &length);
+	AAsset *asset = load_main_shared_object(app, &data, &length);
 	
 	if (!asset) {
 		LogF("Failed to load libsmashhit.so from shim native dir");

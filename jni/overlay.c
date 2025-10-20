@@ -2,6 +2,8 @@
  * Load assets from ZIP files.
  */
 
+#ifndef GRANNY
+
 #include <android_native_app_glue.h>
 #include <android/log.h>
 #include <string.h>
@@ -564,3 +566,5 @@ const char *KNOverlayInit(void) {
 	
 	return NULL;
 }
+
+#endif

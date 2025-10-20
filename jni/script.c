@@ -57,8 +57,9 @@ const char *KNInitLua(void) {
 	// and reduces the shim size by ~30%.
 	KNLoadLua();
 	
-	// NOTE: By some luck ARM32 and ARM64 only differ by the pointer size here - the
-	// lua_openlibs reg table is the same offset from this symbol aside from that!
+	// NOTE: Being this exact offset from _ZTV17QiFileInputStream seems consistent
+	// across mutliple versions of multiple different games. (Observed in
+	// Smash Hit, SHVR, and Granny Smith)
 	luaL_Reg *lua_reg_table = (luaL_Reg *) (KNGetSymbolAddr("_ZTV17QiFileInputStream") + 6 * sizeof(void *));
 	
 	// Probably due to compiler optimisations, the first value in the reg table
