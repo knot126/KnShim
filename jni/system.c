@@ -5,7 +5,7 @@
 #include "lua/lualib.h"
 #include "lua/lauxlib.h"
 
-#include "build_date.h"
+#include "version.h"
 
 #include "util.h"
 
@@ -13,7 +13,7 @@ char *gAndroidInternalDataPath;
 char *gAndroidExternalDataPath;
 
 int knGetShimVersion(lua_State *script) {
-	lua_pushinteger(script, SHIM_BUILD_DATE);
+	lua_pushstring(script, SHIM_VERSION);
 	return 1;
 }
 

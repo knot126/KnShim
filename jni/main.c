@@ -49,7 +49,7 @@ static AAsset *load_main_shared_object(struct android_app *app, const void **dat
 
 bool KNInitEarlyCore(void);
 
-#include "build_date.h"
+#include "version.h"
 
 void android_main(struct android_app *app) {
 	// Set gApp to android app structure
@@ -60,7 +60,7 @@ void android_main(struct android_app *app) {
 		return;
 	}
 	else {
-		LogI("KnShim %d (%s for %s); App SDK %d, Device SDK %d", SHIM_BUILD_DATE, KN_GAME_STRING, KN_ARCH_STRING, KNGetAppSDK(), KNGetDeviceSDK());
+		LogI("KnShim r%s (%s for %s); App SDK %d, Device SDK %d", SHIM_VERSION, KN_GAME_STRING, KN_ARCH_STRING, KNGetAppSDK(), KNGetDeviceSDK());
 	}
 	
 	// Create an instance of Leaf for loading the main binary
