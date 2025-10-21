@@ -12,6 +12,23 @@
 char *gAndroidInternalDataPath;
 char *gAndroidExternalDataPath;
 
+int knSystemAbi(lua_State *script) {
+	/**
+	 * abi = knSystemAbi()
+	 * 
+	 * Return the system ABI/CPU architecture as a string.
+	 * 
+	 * * ARMv7 is "armeabi-v7a"
+	 * * ARMv8 is "arm64-v8a"
+	 * * x86 is "x86"
+	 * * Anything else returns "unknown"
+	 */
+	
+	lua_pushstring(script, KN_ARCH_STRING);
+	
+	return 1;
+}
+
 int knGetShimVersion(lua_State *script) {
 	lua_pushstring(script, SHIM_VERSION);
 	return 1;
@@ -84,6 +101,7 @@ int knInclude(lua_State *script) {
 }
 
 int knEnableSystem(lua_State *script) {
+	knRegisterFunc(script, knSystemAbi);
 	knRegisterFunc(script, knGetShimVersion);
 	knRegisterFunc(script, knGetAppVersion);
 	knRegisterFunc(script, knGetAppSdk);
