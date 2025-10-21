@@ -1,3 +1,4 @@
 jni/build_date.h
 libs/
 obj/
+*.zip
