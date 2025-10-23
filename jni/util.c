@@ -7,6 +7,8 @@
 #include <pthread.h>
 
 #include "extern/leaf.h"
+#define KNOT_PROPERTIES_IMPLEMENTATION
+#include "extern/Properties.h"
 #include "util.h"
 
 /* Shim-wide globals */
@@ -37,6 +39,9 @@ bool KNInitEarlyCore(void) {
 	if (!gLibC) {
 		return false;
 	}
+	
+	void KNLoadConfig(void);
+	KNLoadConfig();
 	
 	return true;
 }
@@ -186,6 +191,32 @@ bool KNPreformInBackground(PthreadCallbackFunc func, void *arg) {
 	pthread_detach(thrd);
 	
 	return true;
+}
+
+bool KNLoadAssetLeanAndMean(const char *path, void **data, size_t *size);
+
+KPProperties *gProperties;
+
+void KNLoadConfig(void) {
+	char *data;
+	
+	if (KNLoadAssetLeanAndMean("knshim.properties.mp3", (void **) &data, NULL)) {
+		gProperties = KPParse(data);
+		free(data);
+	}
+}
+
+const char *GetConfigStr(const char *key, const char *fallback) {
+	return KPGetWithFallback(gProperties, key, fallback);
+}
+
+int64_t GetConfigInt(const char *key, const char *fallback) {
+	return strtoll(GetConfigStr(key, fallback), NULL, 10);
+}
+
+bool GetConfigBool(const char *key, const char *fallback) {
+	const char *val = GetConfigStr(key, fallback);
+	return !(!strcmp(val, "0") || !strcmp(val, "false") || !strcmp(val, "no") || !strcmp(val, "off"));
 }
 
 #define JNI_EXCEPTION_ABORT(JNI, ...) {\
