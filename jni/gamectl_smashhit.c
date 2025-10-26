@@ -2,6 +2,8 @@
  * Game control (such as setting balls, streak, gamemode etc)
  */
 
+#ifndef GRANNY
+
 #include <dlfcn.h>
 #include <math.h>
 
@@ -540,3 +542,5 @@ int knEnableGamectl(lua_State *script) {
 	
 	return 0;
 }
+
+#endif // GRANNY
