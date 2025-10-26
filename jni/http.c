@@ -1,4 +1,5 @@
 #include <string.h>
+#include <dlfcn.h>
 #include <android/log.h>
 
 #define HTTP_IMPLEMENTATION
@@ -358,7 +359,8 @@ int knHttpRelease(lua_State *script) {
 	return 0;
 }
 
-const char *NXExtractArchiveFromBuffer(const char *location, size_t size, const void *buf);
+void *libNXArchive;
+const char *(*NXExtractArchiveFromBuffer)(const char *location, size_t size, const void *buf);
 
 int knHttpExtractNxArchive(lua_State *script) {
 	/**
@@ -367,6 +369,22 @@ int knHttpExtractNxArchive(lua_State *script) {
 	 * Extracts an NXArchive from the HTTP response data. Returns either false
 	 * on success or a string explaining the error on failure.
 	 */
+	
+	if (!libNXArchive) {
+		libNXArchive = dlopen("libNXArchive.so", RTLD_NOW | RTLD_GLOBAL);
+		
+		if (!libNXArchive) {
+			lua_pushstring(script, "nxarchive library not present");
+			return 1;
+		}
+		
+		NXExtractArchiveFromBuffer = dlsym(libNXArchive, "NXExtractArchiveFromBuffer");
+	}
+	
+	if (!NXExtractArchiveFromBuffer) {
+		lua_pushstring(script, "symbol 'NXExtractArchiveFromBuffer' not found");
+		return 1;
+	}
 	
 	if (lua_gettop(script) < 2) {
 		lua_pushstring(script, "not enough params");
