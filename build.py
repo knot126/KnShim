@@ -11,9 +11,9 @@ if "--no-regen-header" not in sys.argv:
 	if "--package" in sys.argv:
 		version = sys.argv[sys.argv.index("--package")+1]
 		new_data = f"#define SHIM_VERSION \"{version}\"\n"
-		Path("jni/version.h").write_text(new_data)
+		Path("jni/shim/version.h").write_text(new_data)
 	
-	with open("jni/modules.txt", "r") as f:
+	with open("jni/shim/modules.txt", "r") as f:
 		enum = ""
 		enables = ""
 		pushenum = ""
@@ -30,7 +30,7 @@ if "--no-regen-header" not in sys.argv:
 				pushenum += f"\tknLuaPushEnum(script, KN_{name.upper()}_BIT);\\\n"
 				i += 1
 		
-		Path("jni/enablement.h").write_text(f"""enum {{
+		Path("jni/shim/enablement.h").write_text(f"""enum {{
 {enum}}};
 
 #define KNSHIM_ENABLE() \\
