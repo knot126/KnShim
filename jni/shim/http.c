@@ -212,7 +212,7 @@ int knHttpData(lua_State *script) {
 		return 1;
 	}
 	
-	if (ctx->context->status == HTTP_STATUS_COMPLETED) {
+	if (ctx->context->status == HTTP_STATUS_COMPLETED || ctx->context->status == HTTP_STATUS_PENDING) {
 		lua_pushlstring(script, ctx->context->response_data, ctx->context->response_size);
 	}
 	else {
