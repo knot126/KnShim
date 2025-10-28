@@ -3,6 +3,7 @@
  */
 
 #include <math.h>
+#include <android/native_activity.h>
 #include "util.h"
 #include "lua_utils.h"
 
@@ -43,6 +44,15 @@ int knWasTouchReleased(lua_State *L) {
 	lua_pushboolean(L, QiInput_wasTouchReleased(gInput, lua_tointeger(L, 1)));
 	return 1;
 }
+
+/*
+TODO: Doesn't work! ANativeActivity_showSoftInput is broken.
+int knShowKeyboard(lua_State *L) {
+	bool forced = lua_toboolean(L, 1);
+	ANativeActivity_showSoftInput(gApp->activity, forced ? ANATIVEACTIVITY_SHOW_SOFT_INPUT_FORCED : ANATIVEACTIVITY_SHOW_SOFT_INPUT_IMPLICIT);
+	return 0;
+}
+*/
 
 int knEnableInput(lua_State *L) {
 	knRegisterFunc(L, knGetTouchCount);
