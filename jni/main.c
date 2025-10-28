@@ -19,12 +19,14 @@ typedef void (*AndroidMainFunc)(struct android_app *app);
 const char *KNInitCore(void);
 const char *KNInitLua(void);
 const char *KNDatabaseInit(void);
+const char *KNAntitamperInit(void);
 const char *KNOverlayInit(void);
 
 ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitCore,
 	KNInitLua,
 	KNDatabaseInit,
+	KNAntitamperInit,
 #ifndef GRANNY
 	KNOverlayInit,
 #endif

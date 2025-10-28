@@ -114,3 +114,41 @@ bool KNLoadAsset(const char *path, void **data, size_t *size) {
 	
 	return status;
 }
+
+bool KNLoadAssetLeanAndMean(const char *path, void **data, size_t *size) {
+	/**
+	 * Load an asset using android's asset manager directly. You must free() the
+	 * returned data when you are done with it.
+	 */
+	
+	AAsset *asset = AAssetManager_open(gApp->activity->assetManager, path, AASSET_MODE_BUFFER);
+	
+	if (!asset) {
+		return false;
+	}
+	
+	size_t fin_size = AAsset_getLength64(asset);
+	
+	void *fin_data = malloc(fin_size + 1);
+	
+	if (!fin_data) {
+		AAsset_close(asset);
+		return false;
+	}
+	
+	const void *src_data = AAsset_getBuffer(asset);
+	
+	if (!src_data) {
+		AAsset_close(asset);
+		return false;
+	}
+	
+	memcpy(fin_data, src_data, fin_size);
+	((uint8_t *) fin_data)[fin_size] = '\0';
+	*data = fin_data;
+	if (size) { *size = fin_size; }
+	
+	AAsset_close(asset);
+	
+	return true;
+}
