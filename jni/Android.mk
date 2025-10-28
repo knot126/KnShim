@@ -1,21 +1,152 @@
 LOCAL_PATH := $(call my-dir)
 
+# KnShim
 include $(CLEAR_VARS)
 
 LOCAL_ARM_MODE  := arm
 LOCAL_MODULE    := shim
-LOCAL_SRC_FILES := util.c asset.c main.c script.c log.c patching.c http.c system.c reg.c files.c gamectl_smashhit.c overlay.c shaders.c input.c draw.c antitamper.c lua/loader.c extern/miniz.c
-LOCAL_LDLIBS    := -ldl -llog -landroid -lGLESv2
+LOCAL_SRC_FILES := shim/util.c \
+	shim/asset.c \
+	shim/main.c \
+	shim/script.c \
+	shim/log.c \
+	shim/patching.c \
+	shim/http.c \
+	shim/system.c \
+	shim/reg.c \
+	shim/files.c \
+	shim/gamectl_smashhit.c \
+	shim/overlay.c \
+	shim/shaders.c \
+	shim/input.c \
+	shim/draw.c \
+	shim/antitamper.c \
+	shim/lua/loader.c \
+	shim/extern/miniz.c
+LOCAL_LDLIBS     := -ldl -llog -landroid -lGLESv2
+LOCAL_SHARED_LIBRARIES := mbedtls
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
-LOCAL_C_INCLUDES := extern
-
-# MbedTLS
-LOCAL_SRC_FILES += extern/mbedtls/library/block_cipher.c extern/mbedtls/library/psa_crypto.c extern/mbedtls/library/pkcs7.c extern/mbedtls/library/pk_ecc.c extern/mbedtls/library/psa_crypto_mac.c extern/mbedtls/library/des.c extern/mbedtls/library/pkwrite.c extern/mbedtls/library/md.c extern/mbedtls/library/pkparse.c extern/mbedtls/library/x509write_crt.c extern/mbedtls/library/sha1.c extern/mbedtls/library/bignum_core.c extern/mbedtls/library/ssl_tls12_client.c extern/mbedtls/library/ssl_ciphersuites.c extern/mbedtls/library/ctr_drbg.c extern/mbedtls/library/entropy_poll.c extern/mbedtls/library/dhm.c extern/mbedtls/library/ccm.c extern/mbedtls/library/padlock.c extern/mbedtls/library/aesce.c extern/mbedtls/library/ssl_client.c extern/mbedtls/library/hkdf.c extern/mbedtls/library/x509_create.c extern/mbedtls/library/ssl_cache.c extern/mbedtls/library/psa_crypto_ffdh.c extern/mbedtls/library/mps_reader.c extern/mbedtls/library/gcm.c extern/mbedtls/library/bignum_mod_raw.c extern/mbedtls/library/psa_crypto_driver_wrappers_no_static.c extern/mbedtls/library/ecp.c extern/mbedtls/library/lms.c extern/mbedtls/library/rsa.c extern/mbedtls/library/version_features.c extern/mbedtls/library/x509.c extern/mbedtls/library/asn1parse.c extern/mbedtls/library/ssl_tls13_client.c extern/mbedtls/library/ssl_tls13_keys.c extern/mbedtls/library/sha3.c extern/mbedtls/library/entropy.c extern/mbedtls/library/oid.c extern/mbedtls/library/nist_kw.c extern/mbedtls/library/pem.c extern/mbedtls/library/bignum.c extern/mbedtls/library/bignum_mod.c extern/mbedtls/library/ssl_tls13_generic.c extern/mbedtls/library/ssl_msg.c extern/mbedtls/library/psa_crypto_rsa.c extern/mbedtls/library/psa_crypto_hash.c extern/mbedtls/library/sha512.c extern/mbedtls/library/aria.c extern/mbedtls/library/constant_time.c extern/mbedtls/library/chachapoly.c extern/mbedtls/library/asn1write.c extern/mbedtls/library/ssl_ticket.c extern/mbedtls/library/psa_crypto_client.c extern/mbedtls/library/x509_csr.c extern/mbedtls/library/net_sockets.c extern/mbedtls/library/memory_buffer_alloc.c extern/mbedtls/library/cmac.c extern/mbedtls/library/psa_crypto_slot_management.c extern/mbedtls/library/threading.c extern/mbedtls/library/cipher.c extern/mbedtls/library/ssl_tls13_server.c extern/mbedtls/library/lmots.c extern/mbedtls/library/aes.c extern/mbedtls/library/chacha20.c extern/mbedtls/library/psa_crypto_se.c extern/mbedtls/library/psa_util.c extern/mbedtls/library/ssl_tls12_server.c extern/mbedtls/library/ecdh.c extern/mbedtls/library/psa_crypto_aead.c extern/mbedtls/library/base64.c extern/mbedtls/library/ssl_tls.c extern/mbedtls/library/x509_crl.c extern/mbedtls/library/md5.c extern/mbedtls/library/mps_trace.c extern/mbedtls/library/ecdsa.c extern/mbedtls/library/ripemd160.c extern/mbedtls/library/pk_wrap.c extern/mbedtls/library/psa_crypto_storage.c extern/mbedtls/library/camellia.c extern/mbedtls/library/poly1305.c extern/mbedtls/library/pkcs12.c extern/mbedtls/library/ecp_curves_new.c extern/mbedtls/library/pk.c extern/mbedtls/library/psa_crypto_ecp.c extern/mbedtls/library/x509write.c extern/mbedtls/library/aesni.c extern/mbedtls/library/error.c extern/mbedtls/library/psa_crypto_cipher.c extern/mbedtls/library/psa_crypto_pake.c extern/mbedtls/library/psa_its_file.c extern/mbedtls/library/cipher_wrap.c extern/mbedtls/library/sha256.c extern/mbedtls/library/ecp_curves.c extern/mbedtls/library/debug.c extern/mbedtls/library/timing.c extern/mbedtls/library/ssl_debug_helpers_generated.c extern/mbedtls/library/x509write_csr.c extern/mbedtls/library/x509_crt.c extern/mbedtls/library/version.c extern/mbedtls/library/platform.c extern/mbedtls/library/platform_util.c extern/mbedtls/library/pkcs5.c extern/mbedtls/library/ssl_cookie.c extern/mbedtls/library/rsa_alt_helpers.c extern/mbedtls/library/hmac_drbg.c extern/mbedtls/library/ecjpake.c
-LOCAL_C_INCLUDES += jni/extern/mbedtls
-
-LOCAL_CFLAGS := -DHTTP_ENABLE_MBEDTLS
+LOCAL_C_INCLUDES := shim/extern jni/mbedtls/mbedtls
+LOCAL_CFLAGS     := -DHTTP_ENABLE_MBEDTLS
 
 # LOCAL_CFLAGS += -DGRANNY
+
+include $(BUILD_SHARED_LIBRARY)
+
+# MbedTLS
+include $(CLEAR_VARS)
+
+LOCAL_ARM_MODE  := arm
+LOCAL_MODULE    := mbedtls
+LOCAL_SRC_FILES += mbedtls/mbedtls/library/block_cipher.c \
+	mbedtls/mbedtls/library/psa_crypto.c \
+	mbedtls/mbedtls/library/pkcs7.c \
+	mbedtls/mbedtls/library/pk_ecc.c \
+	mbedtls/mbedtls/library/psa_crypto_mac.c \
+	mbedtls/mbedtls/library/des.c \
+	mbedtls/mbedtls/library/pkwrite.c \
+	mbedtls/mbedtls/library/md.c \
+	mbedtls/mbedtls/library/pkparse.c \
+	mbedtls/mbedtls/library/x509write_crt.c \
+	mbedtls/mbedtls/library/sha1.c \
+	mbedtls/mbedtls/library/bignum_core.c \
+	mbedtls/mbedtls/library/ssl_tls12_client.c \
+	mbedtls/mbedtls/library/ssl_ciphersuites.c \
+	mbedtls/mbedtls/library/ctr_drbg.c \
+	mbedtls/mbedtls/library/entropy_poll.c \
+	mbedtls/mbedtls/library/dhm.c \
+	mbedtls/mbedtls/library/ccm.c \
+	mbedtls/mbedtls/library/padlock.c \
+	mbedtls/mbedtls/library/aesce.c \
+	mbedtls/mbedtls/library/ssl_client.c \
+	mbedtls/mbedtls/library/hkdf.c \
+	mbedtls/mbedtls/library/x509_create.c \
+	mbedtls/mbedtls/library/ssl_cache.c \
+	mbedtls/mbedtls/library/psa_crypto_ffdh.c \
+	mbedtls/mbedtls/library/mps_reader.c \
+	mbedtls/mbedtls/library/gcm.c \
+	mbedtls/mbedtls/library/bignum_mod_raw.c \
+	mbedtls/mbedtls/library/psa_crypto_driver_wrappers_no_static.c \
+	mbedtls/mbedtls/library/ecp.c \
+	mbedtls/mbedtls/library/lms.c \
+	mbedtls/mbedtls/library/rsa.c \
+	mbedtls/mbedtls/library/version_features.c \
+	mbedtls/mbedtls/library/x509.c \
+	mbedtls/mbedtls/library/asn1parse.c \
+	mbedtls/mbedtls/library/ssl_tls13_client.c \
+	mbedtls/mbedtls/library/ssl_tls13_keys.c \
+	mbedtls/mbedtls/library/sha3.c \
+	mbedtls/mbedtls/library/entropy.c \
+	mbedtls/mbedtls/library/oid.c \
+	mbedtls/mbedtls/library/nist_kw.c \
+	mbedtls/mbedtls/library/pem.c \
+	mbedtls/mbedtls/library/bignum.c \
+	mbedtls/mbedtls/library/bignum_mod.c \
+	mbedtls/mbedtls/library/ssl_tls13_generic.c \
+	mbedtls/mbedtls/library/ssl_msg.c \
+	mbedtls/mbedtls/library/psa_crypto_rsa.c \
+	mbedtls/mbedtls/library/psa_crypto_hash.c \
+	mbedtls/mbedtls/library/sha512.c \
+	mbedtls/mbedtls/library/aria.c \
+	mbedtls/mbedtls/library/constant_time.c \
+	mbedtls/mbedtls/library/chachapoly.c \
+	mbedtls/mbedtls/library/asn1write.c \
+	mbedtls/mbedtls/library/ssl_ticket.c \
+	mbedtls/mbedtls/library/psa_crypto_client.c \
+	mbedtls/mbedtls/library/x509_csr.c \
+	mbedtls/mbedtls/library/net_sockets.c \
+	mbedtls/mbedtls/library/memory_buffer_alloc.c \
+	mbedtls/mbedtls/library/cmac.c \
+	mbedtls/mbedtls/library/psa_crypto_slot_management.c \
+	mbedtls/mbedtls/library/threading.c \
+	mbedtls/mbedtls/library/cipher.c \
+	mbedtls/mbedtls/library/ssl_tls13_server.c \
+	mbedtls/mbedtls/library/lmots.c \
+	mbedtls/mbedtls/library/aes.c \
+	mbedtls/mbedtls/library/chacha20.c \
+	mbedtls/mbedtls/library/psa_crypto_se.c \
+	mbedtls/mbedtls/library/psa_util.c \
+	mbedtls/mbedtls/library/ssl_tls12_server.c \
+	mbedtls/mbedtls/library/ecdh.c \
+	mbedtls/mbedtls/library/psa_crypto_aead.c \
+	mbedtls/mbedtls/library/base64.c \
+	mbedtls/mbedtls/library/ssl_tls.c \
+	mbedtls/mbedtls/library/x509_crl.c \
+	mbedtls/mbedtls/library/md5.c \
+	mbedtls/mbedtls/library/mps_trace.c \
+	mbedtls/mbedtls/library/ecdsa.c \
+	mbedtls/mbedtls/library/ripemd160.c \
+	mbedtls/mbedtls/library/pk_wrap.c \
+	mbedtls/mbedtls/library/psa_crypto_storage.c \
+	mbedtls/mbedtls/library/camellia.c \
+	mbedtls/mbedtls/library/poly1305.c \
+	mbedtls/mbedtls/library/pkcs12.c \
+	mbedtls/mbedtls/library/ecp_curves_new.c \
+	mbedtls/mbedtls/library/pk.c \
+	mbedtls/mbedtls/library/psa_crypto_ecp.c \
+	mbedtls/mbedtls/library/x509write.c \
+	mbedtls/mbedtls/library/aesni.c \
+	mbedtls/mbedtls/library/error.c \
+	mbedtls/mbedtls/library/psa_crypto_cipher.c \
+	mbedtls/mbedtls/library/psa_crypto_pake.c \
+	mbedtls/mbedtls/library/psa_its_file.c \
+	mbedtls/mbedtls/library/cipher_wrap.c \
+	mbedtls/mbedtls/library/sha256.c \
+	mbedtls/mbedtls/library/ecp_curves.c \
+	mbedtls/mbedtls/library/debug.c \
+	mbedtls/mbedtls/library/timing.c \
+	mbedtls/mbedtls/library/ssl_debug_helpers_generated.c \
+	mbedtls/mbedtls/library/x509write_csr.c \
+	mbedtls/mbedtls/library/x509_crt.c \
+	mbedtls/mbedtls/library/version.c \
+	mbedtls/mbedtls/library/platform.c \
+	mbedtls/mbedtls/library/platform_util.c \
+	mbedtls/mbedtls/library/pkcs5.c \
+	mbedtls/mbedtls/library/ssl_cookie.c \
+	mbedtls/mbedtls/library/rsa_alt_helpers.c \
+	mbedtls/mbedtls/library/hmac_drbg.c \
+	mbedtls/mbedtls/library/ecjpake.c
+LOCAL_C_INCLUDES += jni/mbedtls/mbedtls
 
 include $(BUILD_SHARED_LIBRARY)
 
