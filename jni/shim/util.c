@@ -150,11 +150,11 @@ void *KNHookFunctionByName(const char *name, void *hook, bool replace) {
 	 * Hook a function given it's name, the hook to use, and weather or not
 	 * to replace the function entirely or to return a pointer to the original.
 	 * If replace is false, then the original function pointer is returned on
-	 * success. If replace is true, then an invalid but non-NULL pointer is
-	 * return on success. On failure, both modes return NULL.
+	 * success. If replace is true, then a pointer to the named function is
+	 * returned. On failure, both modes return NULL.
 	 */
 	
-	void *orig = (void *)(size_t)(-1);
+	void *orig;
 	
 	void *func = KNGetSymbolAddr(name);
 	
@@ -166,7 +166,7 @@ void *KNHookFunctionByName(const char *name, void *hook, bool replace) {
 		return NULL;
 	}
 	
-	return orig;
+	return replace ? func : orig;
 }
 
 bool KNPreformInBackground(PthreadCallbackFunc func, void *arg) {

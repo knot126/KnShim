@@ -23,8 +23,9 @@ int knSetDisabled(lua_State *script) {
 
 #define LOAD_CORE_LIB(L, NAME, FUNC) lua_pushcfunction(L, FUNC); lua_pushstring(L, NAME); lua_call(L, 1, 0);
 
-int load_lua_libs(lua_State *script) {
+int luaL_openlibs_hook(lua_State *script) {
 	// Load core libs manually so all of them are loaded
+	LOAD_CORE_LIB(script, "", luaopen_base);
 	LOAD_CORE_LIB(script, LUA_LOADLIBNAME, luaopen_package);
 	LOAD_CORE_LIB(script, LUA_TABLIBNAME, luaopen_table);
 	LOAD_CORE_LIB(script, LUA_IOLIBNAME, luaopen_io);
@@ -57,21 +58,12 @@ const char *KNInitLua(void) {
 	// and reduces the shim size by ~30%.
 	KNLoadLua();
 	
-	// NOTE: Being this exact offset from _ZTV17QiFileInputStream seems consistent
-	// across mutliple versions of multiple different games. (Observed in
-	// Smash Hit, SHVR, and Granny Smith)
-	luaL_Reg *lua_reg_table = (luaL_Reg *) (KNGetSymbolAddr("_ZTV17QiFileInputStream") + 6 * sizeof(void *));
-	
-	// Probably due to compiler optimisations, the first value in the reg table
-	// is never used and always point to Smash Hit's own luaopen_base. To make
-	// less trouble, we just go after the base lib.
-	// 
-	// TODO: Would it be more worthwhile to replace luaL_openlibs() with a
-	// custom implementation via hooking instead of doing this?
-	lua_reg_table[1].name = "";
-	lua_reg_table[1].func = load_lua_libs;
-	lua_reg_table[2].name = NULL;
-	lua_reg_table[2].func = NULL;
+	// While we used to add our own function to the lua loading library, we
+	// don't do that anymore and instead just make a replacement hook for
+	// luaL_openlibs. It's easier and more portable across games.
+	if (!KNHookFunctionByName("luaL_openlibs", luaL_openlibs_hook, true)) {
+		return "Failed to replace luaL_openlibs";
+	}
 	
 	// TODO: Most likely not needed anymore
 	gAndroidInternalDataPath = strdup(gApp->activity->internalDataPath);
