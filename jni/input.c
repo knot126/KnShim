@@ -29,8 +29,9 @@ int knGetTouchPos(lua_State *L) {
 	int i = lua_tointeger(L, 1);
 	int x = QiInput_getTouchPosX(gInput, i);
 	int y = QiInput_getTouchPosY(gInput, i);
-	knLuaPushVec2(L, (QiVec2) {x, y});
-	return 1;
+	lua_pushinteger(L, x);
+	lua_pushinteger(L, y);
+	return 2;
 }
 
 int knWasTouchPressed(lua_State *L) {
