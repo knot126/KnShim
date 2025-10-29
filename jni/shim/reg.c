@@ -10,7 +10,7 @@
 #include "util.h"
 
 #define KHASHTABLE_IMPLEMENTATION
-#include "hashtable.h"
+#include "extern/hashtable.h"
 
 /** Registry **/
 KH_Dict *gRegistry;

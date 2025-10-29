@@ -6,7 +6,7 @@ Registry SG
 Database SG
 File SG
 Gamectl S
-Overlay S
+Overlay SG
 Shaders SG
 Input S
 Draw S
