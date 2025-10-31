@@ -20,6 +20,7 @@ LOCAL_SRC_FILES := shim/util.c \
 	shim/shaders.c \
 	shim/input.c \
 	shim/draw.c \
+	shim/publicapi.c \
 	shim/antitamper.c \
 	shim/lua/loader.c \
 	shim/extern/miniz.c

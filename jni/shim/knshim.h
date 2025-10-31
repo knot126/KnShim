@@ -6,6 +6,7 @@
 #ifndef _KNSHIM_API_H_
 #define _KNSHIM_API_H_
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include "lua/lua.h"

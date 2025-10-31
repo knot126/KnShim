@@ -36,14 +36,14 @@ static inline int KnLuaRegistry_Realloc(KnLuaRegistry *self, size_t n) {
 	 * Reallocate the lua registry table so it can fit at least n more entries
 	 */
 	
-	while (this->length + n > this->capacity) {
+	while (self->length + n > self->capacity) {
 		const size_t cap = self->capacity + (self->capacity >> 2) + 1;
-		KnLuaRegistryEntry * const ents = realloc(this->entries, cap * sizeof *this->entries);
+		KnLuaRegistryEntry * const ents = realloc(self->entries, cap * sizeof *self->entries);
 		if (!ents) {
 			return 0;
 		}
-		this->entries = ents;
-		this->capacity = cap;
+		self->entries = ents;
+		self->capacity = cap;
 	}
 	return 1;
 }
@@ -57,7 +57,7 @@ static inline int KnLuaRegistry_Append(KnLuaRegistry *self, KnLuaRegistryEntry e
 		return 0;
 	}
 	
-	this->entries[this->length++] = ent;
+	self->entries[self->length++] = ent;
 	
 	return 1;
 }
@@ -103,5 +103,5 @@ bool KnRegisterLuaScriptGlobalString(const char *name, const char *value) {
 }
 
 const char *KNPublicAPIInit(void) {
-	KnLuaRegistry_Init(KnLuaRegistry *self)
+	return NULL;
 }
