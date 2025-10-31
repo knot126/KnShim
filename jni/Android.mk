@@ -25,16 +25,23 @@ LOCAL_SRC_FILES := shim/util.c \
 	shim/lua/loader.c \
 	shim/extern/miniz.c
 LOCAL_LDLIBS     := -ldl -llog -landroid -lGLESv2
+ifndef DISABLE_TLS
 LOCAL_SHARED_LIBRARIES := mbedtls
+endif
 LOCAL_STATIC_LIBRARIES := android_native_app_glue
 LOCAL_C_INCLUDES := shim/extern jni/mbedtls/mbedtls
-LOCAL_CFLAGS     := -DHTTP_ENABLE_MBEDTLS
+LOCAL_CFLAGS     := -DDUMMY
+
+ifndef DISABLE_TLS
+LOCAL_CFLAGS     += -DHTTP_ENABLE_MBEDTLS
+endif
 
 # LOCAL_CFLAGS += -DGRANNY
 
 include $(BUILD_SHARED_LIBRARY)
 
 # MbedTLS
+ifndef DISABLE_TLS
 include $(CLEAR_VARS)
 
 LOCAL_ARM_MODE  := arm
@@ -150,5 +157,6 @@ LOCAL_SRC_FILES += mbedtls/mbedtls/library/block_cipher.c \
 LOCAL_C_INCLUDES += jni/mbedtls/mbedtls
 
 include $(BUILD_SHARED_LIBRARY)
+endif
 
 $(call import-module,android/native_app_glue)

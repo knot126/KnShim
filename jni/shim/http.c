@@ -13,11 +13,13 @@
 
 #include "util.h"
 
+#ifdef HTTP_ENABLE_MBEDTLS
 struct {
 	bool allow_without_cert;
 	unsigned char *cert_data;
 	size_t cert_data_size;
 } gHttps;
+#endif
 
 typedef struct {
 	http_t *context;
@@ -127,10 +129,12 @@ int knHttpRequest(lua_State *script) {
 		return 0;
 	}
 	
+#ifdef HTTP_ENABLE_MBEDTLS
 	if (!memcmp("https://", url, 8) && !gHttps.allow_without_cert && !gHttps.cert_data) {
 		luaL_error(script, "Certificate verification set to required but no HTTPS certificate has been installed");
 		return 0;
 	}
+#endif
 	
 	size_t body_size = 0;
 	const char *body = lua_tolstring(script, 3, &body_size);
@@ -142,7 +146,11 @@ int knHttpRequest(lua_State *script) {
 		fillHeaders(script, 4, headers, num_headers);
 	}
 	
+#ifdef HTTP_ENABLE_MBEDTLS
 	http_t *request = http_request(method, url, body, body_size, num_headers ? headers : NULL, num_headers, gHttps.cert_data, gHttps.cert_data_size, NULL);
+#else
+	http_t *request = http_request(method, url, body, body_size, num_headers ? headers : NULL, num_headers, NULL);
+#endif
 	
 	if (!request) {
 		luaL_error(script, "Could not create request object");
@@ -463,6 +471,7 @@ int knHttpExtractNxArchive(lua_State *script) {
 	return 1;
 }
 
+#ifdef HTTP_ENABLE_MBEDTLS
 int knHttpsCert(lua_State *L) {
 	if (lua_gettop(L) == 0) {
 		free(gHttps.cert_data);
@@ -501,6 +510,7 @@ int knHttpsNoCert(lua_State *L) {
 	
 	return 0;
 }
+#endif
 
 int knEnableHttp(lua_State *script) {
 	lua_register(script, "knHttpRequest", knHttpRequest);
@@ -513,8 +523,10 @@ int knEnableHttp(lua_State *script) {
 	lua_register(script, "knHttpErrorCode", knHttpErrorCode);
 	lua_register(script, "knHttpRelease", knHttpRelease);
 	lua_register(script, "knHttpExtractNxArchive", knHttpExtractNxArchive);
+#ifdef HTTP_ENABLE_MBEDTLS
 	lua_register(script, "knHttpsCert", knHttpsCert);
 	lua_register(script, "knHttpsNoCert", knHttpsNoCert);
+#endif
 	lua_pushinteger(script, KN_HTTP_PENDING); lua_setglobal(script, "KN_HTTP_PENDING");
 	lua_pushinteger(script, KN_HTTP_DONE); lua_setglobal(script, "KN_HTTP_DONE");
 	lua_pushinteger(script, KN_HTTP_ERROR); lua_setglobal(script, "KN_HTTP_ERROR");

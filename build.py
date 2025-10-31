@@ -53,7 +53,12 @@ else:
 	if f"# {granny_define}" not in mk:
 		Path("jni/Android.mk").write_text(mk.replace(granny_define, f"# {granny_define}"))
 
-status = os.system("ndk-build")
+ndk_build_args = ""
+
+if "--no-tls" in sys.argv:
+	ndk_build_args += " DISABLE_TLS=true"
+
+status = os.system(f"ndk-build{ndk_build_args}")
 
 if not status:
 	if "--upgrade" in sys.argv:
