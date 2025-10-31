@@ -222,6 +222,52 @@ int knHttpData(lua_State *script) {
 	return 1;
 }
 
+int knHttpSave(lua_State *script) {
+	/**
+	 * knHttpSave(request, path)
+	 * 
+	 * Save the data to a given file.
+	 */
+	
+	if (lua_gettop(script) < 2) {
+		luaL_error(script, "Not enough arguments to knHttpSave");
+		return 0;
+	}
+	
+	knHttpContext *ctx = lua_touserdata(script, 1);
+	
+	if (!ctx || !ctx->context) {
+		luaL_error(script, "Context is nil");
+		return 0;
+	}
+	
+	const char *path = lua_tostring(script, 2);
+	
+	if (!path) {
+		luaL_error(script, "Path is not valid");
+		return 0;
+	}
+	
+	FILE *file = fopen(path, "wb");
+	
+	if (!file) {
+		luaL_error(script, "Failed to open file write stream");
+		return 0;
+	}
+	
+	size_t written = fwrite(ctx->context->response_data, 1, ctx->context->response_size, file);
+	
+	fclose(file);
+	
+	if (written != ctx->context->response_size) {
+		remove(path);
+		luaL_error(script, "File was not completely written");
+		return 0;
+	}
+	
+	return 0;
+}
+
 int knHttpDataSize(lua_State *script) {
 	/**
 	 * Return the size of the data or 0 if there is none.
