@@ -507,6 +507,7 @@ int knEnableHttp(lua_State *script) {
 	lua_register(script, "knHttpUpdate", knHttpUpdate);
 	lua_register(script, "knHttpData", knHttpData);
 	lua_register(script, "knHttpDataSize", knHttpDataSize);
+	lua_register(script, "knHttpSave", knHttpSave);
 	lua_register(script, "knHttpGetHeader", knHttpGetHeader);
 	lua_register(script, "knHttpError", knHttpError);
 	lua_register(script, "knHttpErrorCode", knHttpErrorCode);
