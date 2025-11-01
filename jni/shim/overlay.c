@@ -343,7 +343,8 @@ int knPushOverlay(lua_State *L) {
 		lua_pushboolean(L, OverlayManagerPush(&gOverlayMan, overlay));
 	}
 	else {
-		lua_pushboolean(L, 0);
+		luaL_error(L, "Could not push %s overlay at %s", type, lua_tostring(L, 2));
+		return 0;
 	}
 	
 	return 1;
@@ -367,9 +368,9 @@ int knEnableOverlay(lua_State *L) {
  * Boilerplate overlay init and hooking code
  * ============================================================================
  */
-bool (*QiFileInputStream_open)(QiFileInputStream *this, char *path);
+bool (*QiFileInputStream_open)(QiFileInputStream *this, const char *path);
 
-bool QiFileInputStream_open_hook(QiFileInputStream *this, char *path) {
+bool QiFileInputStream_open_hook(QiFileInputStream *this, const char *path) {
 	/**
 	 * Hook which sits between QiFileInputStream::open() calls and tries to open
 	 * files from overlays before moving on to the assets directory.
@@ -383,7 +384,10 @@ bool QiFileInputStream_open_hook(QiFileInputStream *this, char *path) {
 		final_path[strlen(final_path) - 4] = '\0';
 	}
 	
+	LogI("Want to find: %s", final_path);
+	
 	if (KNOverlayLoad(this, final_path)) {
+		LogI("Found: %s", final_path);
 		return true;
 	}
 	

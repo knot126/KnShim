@@ -19,11 +19,17 @@ typedef struct QiColor {
 	float r, g, b, a;
 } QiColor;
 
+#ifdef GRANNY
+#define QI_STRING_LOCAL_SIZE 16
+#else
+#define QI_STRING_LOCAL_SIZE 32
+#endif
+
 typedef struct QiString {
 	char *data;
 	int allocated_size;
 	int length;
-	char cached[32];
+	char cached[QI_STRING_LOCAL_SIZE];
 } QiString;
 
 typedef struct QiScript {

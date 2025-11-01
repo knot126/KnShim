@@ -27,9 +27,7 @@ ModuleInitFunc gModuleInitFuncs[] = {
 	KNInitLua,
 	KNDatabaseInit,
 	KNAntitamperInit,
-#ifndef GRANNY
 	KNOverlayInit,
-#endif
 	NULL,
 };
 
