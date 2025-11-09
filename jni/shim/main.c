@@ -16,14 +16,14 @@
 
 typedef void (*AndroidMainFunc)(struct android_app *app);
 
-const char *KNInitCore(void);
+const char *KnShim_Init(void);
 const char *KNInitLua(void);
 const char *KNDatabaseInit(void);
 const char *KNAntitamperInit(void);
 const char *KNOverlayInit(void);
 
 ModuleInitFunc gModuleInitFuncs[] = {
-	KNInitCore,
+	KnShim_Init,
 	KNInitLua,
 	KNDatabaseInit,
 	KNAntitamperInit,
@@ -31,7 +31,7 @@ ModuleInitFunc gModuleInitFuncs[] = {
 	NULL,
 };
 
-static AAsset *load_main_shared_object(struct android_app *app, const void **data, size_t *length) {
+static AAsset *KnShim_LoadMainSharedObject(struct android_app *app, const void **data, size_t *length) {
 	// Read libsmashhit.so
 	AAssetManager *asset_manager = app->activity->assetManager;
 	
@@ -47,7 +47,7 @@ static AAsset *load_main_shared_object(struct android_app *app, const void **dat
 	return asset;
 }
 
-bool KNInitEarlyCore(void);
+const char *KnShim_EarlyInit(void);
 
 #include "version.h"
 
@@ -55,7 +55,7 @@ void android_main(struct android_app *app) {
 	// Set gApp to android app structure
 	gApp = app;
 	
-	if (!KNInitEarlyCore()) {
+	if (KnShim_EarlyInit()) {
 		LogF("Early shim init failed");
 		return;
 	}
@@ -77,7 +77,7 @@ void android_main(struct android_app *app) {
 	// Load the contents of LSH
 	const void *data;
 	size_t length;
-	AAsset *asset = load_main_shared_object(app, &data, &length);
+	AAsset *asset = KnShim_LoadMainSharedObject(app, &data, &length);
 	
 	if (!asset) {
 		LogF("Failed to load game shared object from shim native dir");

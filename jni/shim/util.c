@@ -16,7 +16,7 @@ Game **gGamePtr;
 void *gLibAndroid;
 void *gLibC;
 
-bool KNInitEarlyCore(void) {
+const char *KnShim_EarlyInit(void) {
 	/**
 	 * Initialise some core stuff the shim needs. This happens *before* Smash
 	 * Hit is loaded.
@@ -28,22 +28,29 @@ bool KNInitEarlyCore(void) {
 	gLibAndroid = dlopen("libandroid.so", RTLD_NOW | RTLD_GLOBAL);
 	
 	if (!gLibAndroid) {
-		return false;
+		return "Loading libandroid.so failed";
 	}
 	
 	// same goes for libc
 	gLibC = dlopen("libc.so", RTLD_NOW | RTLD_GLOBAL);
 	
 	if (!gLibC) {
-		return false;
+		return "Loading libc.so failed";
 	}
 	
-	return true;
+	return NULL;
 }
 
-const char *KNInitCore(void) {
+void KnShim_Release(void);
+
+const char *KnShim_Init(void) {
 	gGamePtr = KNGetSymbolAddr("gGame");
+	atexit(&KnShim_Release);
 	return NULL;
+}
+
+void KnShim_Release(void) {
+	LeafFree(gLeaf);
 }
 
 #define LOAD_LIBANDROID_FUNC(RET, NAME, SIG) RET (*NAME)SIG = dlsym(gLibAndroid, #NAME);
