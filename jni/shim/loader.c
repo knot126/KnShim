@@ -82,11 +82,10 @@ void KnShim_Release(void) {
 }
 
 /* Game loading */
-static inline AAsset *KnShim_LoadMainSharedObject(const void **data, size_t *length) {
-	// Read libsmashhit.so
+static inline AAsset *KnShim_LoadMainSharedObject(const char *path, const void **data, size_t *length) {
 	AAssetManager *asset_manager = gApp->activity->assetManager;
 	
-	AAsset *asset = AAssetManager_open(asset_manager, "native/" KN_ARCH_STRING "/lib" KN_GAME_STRING ".so.mp3", AASSET_MODE_BUFFER);
+	AAsset *asset = AAssetManager_open(asset_manager, path, AASSET_MODE_BUFFER);
 	
 	if (!asset) {
 		return NULL;
@@ -98,6 +97,24 @@ static inline AAsset *KnShim_LoadMainSharedObject(const void **data, size_t *len
 	return asset;
 }
 
+static inline char *KnShim_FindGameObject(void) {
+	/**
+	 * Find any single shared object in the native/<current-arch> path and 
+	 * return the path to it. This is a fairly clean way to load the game .so
+	 * without needing to know the exact game name ahead of time. The returned
+	 * string must be freed!
+	 */
+	
+	AAssetDir *natives = AAssetManager_openDir(gApp->activity->assetManager, "native/" KN_ARCH_STRING);
+	const char *filename_am = AAssetDir_getNextFileName(natives);
+	char *filename = NULL;
+	if (filename_am) {
+		filename = strdup(filename_am);
+	}
+	AAssetDir_close(natives);
+	return filename;
+}
+
 const char *KnShim_LoadGame(void) {
 	// Create an instance of Leaf for loading the main binary
 	gLeaf = LeafInit();
@@ -106,10 +123,17 @@ const char *KnShim_LoadGame(void) {
 		return "Leaf init failed";
 	}
 	
+	// Find shared object path for this game
+	char *so_path = KnShim_FindGameObject();
+	
+	if (!so_path) {
+		return "Could not find any shared object for the current archiecture";
+	}
+	
 	// Load the contents of the game's library
 	const void *data;
 	size_t length;
-	AAsset *asset = KnShim_LoadMainSharedObject(&data, &length);
+	AAsset *asset = KnShim_LoadMainSharedObject(so_path, &data, &length);
 	
 	if (!asset) {
 		return "Failed to load game shared object from shim native dir";
@@ -125,6 +149,9 @@ const char *KnShim_LoadGame(void) {
 	
 	// Close asset handle, its not needed anymore
 	AAsset_close(asset);
+	free(so_path);
+	
+	return NULL;
 }
 
 /* Modules */
