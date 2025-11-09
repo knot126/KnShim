@@ -6,6 +6,7 @@ include $(CLEAR_VARS)
 LOCAL_ARM_MODE  := arm
 LOCAL_MODULE    := shim
 LOCAL_SRC_FILES := shim/util.c \
+	shim/loader.c \
 	shim/asset.c \
 	shim/main.c \
 	shim/script.c \

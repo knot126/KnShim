@@ -1,3 +1,29 @@
+/**
+ * Various utility functions that don't belong elsewhere.
+ * 
+ * -----------------------------------------------------------------------------
+ * 
+ * This file is part of KnShim. Copyright (c) 2024 - 2025 Knot126.
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <android_native_app_glue.h>
 #include <android/log.h>
 #include <sys/mman.h>
@@ -8,50 +34,6 @@
 
 #include "extern/leaf.h"
 #include "util.h"
-
-/* Shim-wide globals */
-struct android_app *gApp;
-Leaf *gLeaf;
-Game **gGamePtr;
-void *gLibAndroid;
-void *gLibC;
-
-const char *KnShim_EarlyInit(void) {
-	/**
-	 * Initialise some core stuff the shim needs. This happens *before* Smash
-	 * Hit is loaded.
-	 */
-	
-	// dynamically load libandroid.so for functions that might not be available
-	// in older api levels and thus cannot be statically linked if we want to
-	// keep running on these older versions.
-	gLibAndroid = dlopen("libandroid.so", RTLD_NOW | RTLD_GLOBAL);
-	
-	if (!gLibAndroid) {
-		return "Loading libandroid.so failed";
-	}
-	
-	// same goes for libc
-	gLibC = dlopen("libc.so", RTLD_NOW | RTLD_GLOBAL);
-	
-	if (!gLibC) {
-		return "Loading libc.so failed";
-	}
-	
-	return NULL;
-}
-
-void KnShim_Release(void);
-
-const char *KnShim_Init(void) {
-	gGamePtr = KNGetSymbolAddr("gGame");
-	atexit(&KnShim_Release);
-	return NULL;
-}
-
-void KnShim_Release(void) {
-	LeafFree(gLeaf);
-}
 
 #define LOAD_LIBANDROID_FUNC(RET, NAME, SIG) RET (*NAME)SIG = dlsym(gLibAndroid, #NAME);
 
