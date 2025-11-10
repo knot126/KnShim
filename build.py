@@ -5,7 +5,20 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-game = "G" if "--granny" in sys.argv else "S"
+if "--help" in sys.argv:
+	print(f"""{sys.argv[0]} [OPTIONS] -- build KnShim
+
+Options:
+    --game <game id>    Build KnShim for a certian game. Available games are
+                        "smashhit" and "grannysmith".
+    --no-regen-header   Do not regenerate headers
+    --package <version> Package the shim with the version number <version>.
+    --no-tls            Disable HTTPS support and don't build MbedTLS
+    --upgrade           Automatically upgrade apk open in apk editor studio
+""")
+	sys.exit()
+
+game = "smashhit" if "--game" not in sys.argv else sys.argv[sys.argv.index("--game")+1]
 
 if "--no-regen-header" not in sys.argv:
 	if "--package" in sys.argv:
@@ -20,10 +33,9 @@ if "--no-regen-header" not in sys.argv:
 		i = 0
 		
 		for line in f.readlines():
-			info = line.strip().split()
-			name = info[0]
+			name = line.strip().split()[0]
 			
-			if game in info[1]:
+			if game in line:
 				enum += f"\tKN_{name.upper()}_BIT = (1 << {i}),\n"
 				enables += f"\tint knEnable{name}(lua_State *script);\\\n"
 				enables += f"\tif ((gDisabledModules & KN_{name.upper()}_BIT) == 0) {{ knEnable{name}(script); }}\\\n"
@@ -42,7 +54,7 @@ if "--no-regen-header" not in sys.argv:
 # Kill me
 granny_define = "LOCAL_CFLAGS += -DGRANNY"
 
-if "--granny" in sys.argv:
+if game == "grannysmith":
 	mk = Path("jni/Android.mk").read_text()
 	
 	if f"# {granny_define}" in mk:
@@ -73,4 +85,4 @@ if not status:
 	
 	if "--package" in sys.argv:
 		version = sys.argv[sys.argv.index("--package")+1]
-		shutil.make_archive(f"knshim-r{version}-libs", "zip", "./libs")
+		shutil.make_archive(f"knshim-r{version}-{game}-libs", "zip", "./libs")
