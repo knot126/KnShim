@@ -65,10 +65,18 @@ static jfieldID KnShim_GetFieldID(JNIEnv *jni, const char *className, const char
 #define JNI_GET_ENV() \
 	JavaVM *vm = gApp->activity->vm; \
 	JNIEnv *jni = NULL; \
+	jint getenv_err = JNI_OK, attach_err = JNI_OK; \
 	\
-	if ((*vm)->GetEnv(vm, (void **) &jni, JNI_VERSION_1_6) != JNI_OK) { \
-		LogF("The JNI is not okay!"); \
-		abort(); \
+	getenv_err = (*vm)->GetEnv(vm, (void **) &jni, JNI_VERSION_1_6); \
+	\
+	if (getenv_err != JNI_OK) { \
+		JavaVMAttachArgs args = {JNI_VERSION_1_6, NULL, NULL}; \
+		attach_err = (*vm)->AttachCurrentThread(vm, &jni, &args); \
+		\
+		if (attach_err != JNI_OK) { \
+			LogF("The JNI is not okay and could not be attached! (Errors: GetEnv=%d, Attach=%d)", getenv_err, attach_err); \
+			abort(); \
+		} \
 	}
 
 char *KnShim_GetPackageCodePath(void) {

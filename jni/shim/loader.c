@@ -35,7 +35,7 @@
 #undef LEAF_IMPLEMENTATION
 
 #include "util.h"
-
+#include "jnistuff.h"
 #include "loader.h"
 
 /* Shim-wide globals. They are kept here since they are used here most. */
@@ -45,6 +45,7 @@ Game **gGamePtr;
 void *gLibAndroid;
 void *gLibC;
 char *gGameName;
+char *gPackageCodePath;
 
 /* Early init, init, and release */
 const char *KnShim_EarlyInit(void) {
@@ -216,6 +217,15 @@ ModuleInitFunc gModuleInitFuncs[] = {
 };
 
 const char *KnShim_LoadMods(void) {
+	gPackageCodePath = KnShim_GetPackageCodePath();
+	
+	if (gPackageCodePath) {
+		LogI("Found package code path: %s", gPackageCodePath);
+	}
+	else {
+		LogE("Could not get package code path");
+	}
+	
 	for (size_t i = 0; gModuleInitFuncs[i] != NULL; i++) {
 		const char *status = (gModuleInitFuncs[i])();
 		
