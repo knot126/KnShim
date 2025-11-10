@@ -106,12 +106,17 @@ static inline char *KnShim_FindGameObject(void) {
 	 * string must be freed!
 	 */
 	
-	AAssetDir *natives = AAssetManager_openDir(gApp->activity->assetManager, "native/" KN_ARCH_STRING);
+	const char *const subdir = "native/" KN_ARCH_STRING;
+	AAssetDir *natives = AAssetManager_openDir(gApp->activity->assetManager, subdir);
+	if (!natives) { return NULL; }
 	const char *filename_am = AAssetDir_getNextFileName(natives);
-	char *filename = NULL;
-	if (filename_am) {
-		filename = strdup(filename_am);
-	}
+	char *filename = malloc(strlen(subdir) + strlen(filename_am) + 2);
+	if (!filename) { goto finally; }
+	strcpy(filename, subdir);
+	strcat(filename, "/");
+	strcat(filename, filename_am);
+	
+finally:
 	AAssetDir_close(natives);
 	return filename;
 }
@@ -123,13 +128,13 @@ static inline char *KnShim_NameOfGameFromObjectPath(const char *path) {
 	 * closing).
 	 */
 	
-	const char *slashlib = strstr(path, "/lib");
+	const char *lib = strstr(path, "lib");
 	
-	if (!slashlib) {
+	if (!lib) {
 		return NULL;
 	}
 	
-	slashlib += 4; // skip "/lib"
+	lib += 3; // skip "lib"
 	
 	const char *end = strstr(path, ".so");
 	
@@ -137,7 +142,7 @@ static inline char *KnShim_NameOfGameFromObjectPath(const char *path) {
 		return NULL;
 	}
 	
-	return strndup(slashlib, end - slashlib);
+	return strndup(lib, end - lib);
 }
 
 const char *KnShim_LoadGame(void) {
@@ -159,6 +164,8 @@ const char *KnShim_LoadGame(void) {
 		return "Could not find any shared object for the current archiecture";
 	}
 	
+	LogI("Found game object: %s", so_path);
+	
 	// Find name of game
 	gGameName = KnShim_NameOfGameFromObjectPath(so_path);
 	
@@ -166,7 +173,7 @@ const char *KnShim_LoadGame(void) {
 		return "Could not parse game name from object path";
 	}
 	
-	LogI("Found game object: %s (name: %s)", so_path, gGameName);
+	LogI("Found game name: %s", gGameName);
 	
 	// Load the contents of the game's library
 	const void *data;
