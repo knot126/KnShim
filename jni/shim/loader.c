@@ -44,6 +44,7 @@ Leaf *gLeaf;
 Game **gGamePtr;
 void *gLibAndroid;
 void *gLibC;
+char *gGameName;
 
 /* Early init, init, and release */
 const char *KnShim_EarlyInit(void) {
@@ -115,7 +116,35 @@ static inline char *KnShim_FindGameObject(void) {
 	return filename;
 }
 
+static inline char *KnShim_NameOfGameFromObjectPath(const char *path) {
+	/**
+	 * Parse out the name of the game from the given object path. Returned
+	 * string should be freed (unless you rely on the OS to do that after
+	 * closing).
+	 */
+	
+	const char *slashlib = strstr(path, "/lib");
+	
+	if (!slashlib) {
+		return NULL;
+	}
+	
+	slashlib += 4; // skip "/lib"
+	
+	const char *end = strstr(path, ".so");
+	
+	if (!end) {
+		return NULL;
+	}
+	
+	return strndup(slashlib, end - slashlib);
+}
+
 const char *KnShim_LoadGame(void) {
+	/**
+	 * Find and load the main game binary
+	 */
+	
 	// Create an instance of Leaf for loading the main binary
 	gLeaf = LeafInit();
 	
@@ -129,6 +158,15 @@ const char *KnShim_LoadGame(void) {
 	if (!so_path) {
 		return "Could not find any shared object for the current archiecture";
 	}
+	
+	// Find name of game
+	gGameName = KnShim_NameOfGameFromObjectPath(so_path);
+	
+	if (!gGameName) {
+		return "Could not parse game name from object path";
+	}
+	
+	LogI("Found game object: %s (name: %s)", so_path, gGameName);
 	
 	// Load the contents of the game's library
 	const void *data;
