@@ -9,12 +9,10 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
-#include "extern/miniz.h"
+#include "lua_utils.h"
+#include "../extern/miniz.h"
 
-#include "util.h"
+#include "../util.h"
 #include "smashhit.h"
 
 /**

@@ -5,7 +5,7 @@
 #ifdef GRANNY
 
 #include "lua_utils.h"
-#include "util.h"
+#include "../util.h"
 
 int knEnableGamectl(lua_State *script) {
 	

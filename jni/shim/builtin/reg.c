@@ -3,14 +3,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
-
-#include "util.h"
+#include "lua_utils.h"
+#include "../util.h"
 
 #define KHASHTABLE_IMPLEMENTATION
-#include "extern/hashtable.h"
+#include "../extern/hashtable.h"
 
 /** Registry **/
 KH_Dict *gRegistry;

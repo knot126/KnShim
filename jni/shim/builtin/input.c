@@ -4,7 +4,7 @@
 
 #include <math.h>
 #include <android/native_activity.h>
-#include "util.h"
+#include "../util.h"
 #include "lua_utils.h"
 
 #define gInput (gGame->input)

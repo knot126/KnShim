@@ -5,24 +5,24 @@ include $(CLEAR_VARS)
 
 LOCAL_ARM_MODE  := arm
 LOCAL_MODULE    := shim
-LOCAL_SRC_FILES := shim/util.c \
+LOCAL_SRC_FILES := shim/main.c \
+	shim/util.c \
+	shim/knshim.c \
 	shim/loader.c \
-	shim/asset.c \
-	shim/main.c \
-	shim/script.c \
-	shim/log.c \
-	shim/patching.c \
-	shim/http.c \
-	shim/system.c \
-	shim/reg.c \
-	shim/files.c \
-	shim/gamectl_smashhit.c \
-	shim/overlay.c \
-	shim/shaders.c \
-	shim/input.c \
-	shim/draw.c \
-	shim/publicapi.c \
-	shim/antitamper.c \
+	shim/builtin/antitamper.c \
+	shim/builtin/asset.c \
+	shim/builtin/script.c \
+	shim/builtin/log.c \
+	shim/builtin/patching.c \
+	shim/builtin/http.c \
+	shim/builtin/system.c \
+	shim/builtin/reg.c \
+	shim/builtin/files.c \
+	shim/builtin/gamectl_smashhit.c \
+	shim/builtin/overlay.c \
+	shim/builtin/shaders.c \
+	shim/builtin/input.c \
+	shim/builtin/draw.c \
 	shim/lua/loader.c \
 	shim/extern/miniz.c
 LOCAL_LDLIBS     := -ldl -llog -landroid -lGLESv2

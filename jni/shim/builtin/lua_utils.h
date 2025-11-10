@@ -3,9 +3,9 @@
 
 #include "smashhit.h"
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
+#include "../lua/lua.h"
+#include "../lua/lualib.h"
+#include "../lua/lauxlib.h"
 
 static inline QiVec2 knLuaToVec2(lua_State *L, int index) {
 	QiVec2 v;

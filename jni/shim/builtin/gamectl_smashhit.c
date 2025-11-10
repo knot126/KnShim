@@ -7,11 +7,9 @@
 #include <dlfcn.h>
 #include <math.h>
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
+#include "lua_utils.h"
 
-#include "util.h"
+#include "../util.h"
 #include "smashhit.h"
 
 #define MakeQiString(CSTR) (QiString) { \

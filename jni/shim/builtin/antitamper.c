@@ -5,7 +5,7 @@
 
 #include <string.h>
 #include <android/log.h>
-#include "util.h"
+#include "../util.h"
 
 bool KNLoadAssetLeanAndMean(const char *path, void **data, size_t *size);
 

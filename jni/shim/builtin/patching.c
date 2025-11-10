@@ -2,11 +2,8 @@
  * Memory patching utilities
  */
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
-
-#include "util.h"
+#include "lua_utils.h"
+#include "../util.h"
 
 int knPatch(lua_State *script) {
 	/**

@@ -7,8 +7,8 @@
 #define GL_GLES_PROTOTYPES 1
 #include <GLES2/gl2.h>
 
-#include "lua/lua.h"
-#include "util.h"
+#include "../lua/lua.h"
+#include "../util.h"
 
 enum {
 	GAME_SHADER_2D = 0,

@@ -5,7 +5,7 @@
 
 #include <math.h>
 #include <GLES2/gl2.h>
-#include "util.h"
+#include "../util.h"
 #include "lua_utils.h"
 
 void (*Gfx_drawLine)(Gfx *this,QiVec3 *pointA,QiVec3 *pointB,QiColor *colour,float param_5);

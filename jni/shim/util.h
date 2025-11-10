@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include "extern/leaf.h"
-#include "smashhit.h"
+#include "builtin/smashhit.h"
 
 #define TAG "knshim"
 

@@ -1,13 +1,9 @@
 #include <android_native_app_glue.h>
 #include <android/log.h>
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
-
-#include "version.h"
-
-#include "util.h"
+#include "lua_utils.h"
+#include "../version.h"
+#include "../util.h"
 
 char *gAndroidInternalDataPath;
 char *gAndroidExternalDataPath;

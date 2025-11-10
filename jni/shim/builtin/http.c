@@ -5,13 +5,10 @@
 #define HTTP_IMPLEMENTATION
 #define HTTP_LOG(...) __android_log_print(ANDROID_LOG_INFO, "knshim", __VA_ARGS__)
 #include <netinet/in.h>
-#include "extern/http.h"
+#include "../extern/http.h"
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
-
-#include "util.h"
+#include "lua_utils.h"
+#include "../util.h"
 
 #ifdef HTTP_ENABLE_MBEDTLS
 struct {

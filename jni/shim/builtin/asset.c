@@ -7,10 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <android/log.h>
 
 #include "smashhit.h"
-#include "util.h"
+#include "../util.h"
 
 typedef struct KnMemoryOutputStream {
 	QiOutputStream base;

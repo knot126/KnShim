@@ -3,11 +3,9 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-#include "lua/lua.h"
-#include "lua/lualib.h"
-#include "lua/lauxlib.h"
+#include "lua_utils.h"
 
-#include "util.h"
+#include "../util.h"
 
 int knWriteFile(lua_State *script) {
 	/**
