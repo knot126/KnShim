@@ -34,7 +34,6 @@ extern struct android_app *gApp;
 
 extern void *gLibAndroid;
 extern void *gLibC;
-extern Game **gGamePtr;
 
 /* Create/destroy the shim functions */
 const char *KnShim_EarlyInit(void);

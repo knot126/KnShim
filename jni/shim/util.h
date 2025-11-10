@@ -33,8 +33,6 @@
 #include "extern/leaf.h"
 #include "builtin/smashhit.h"
 
-#define TAG "knshim"
-
 #ifdef GRANNY
 #define KN_GAME_STRING "grannysmith"
 #else

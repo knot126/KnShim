@@ -305,3 +305,4 @@ bool KNGetAppVersion(char *buffer, size_t maxSize) {
 	
 	return true;
 }
+
