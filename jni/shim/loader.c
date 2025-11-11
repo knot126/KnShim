@@ -249,8 +249,8 @@ Mod *gModChain;
 
 static int KnShim_ZIPFileNameIterationCallback(void *context, const char *name) {
 	// Cock if this is module
-	if (strncmp(name, "lib/lib", 7)) {
-		LogI("Excluding %s: not a library file", name);
+	if (strncmp(name, "lib/" KN_ARCH_STRING "/lib", strlen("lib/" KN_ARCH_STRING "/lib"))) {
+		// LogI("Excluding %s: not a library file", name);
 		return 1;
 	}
 	
@@ -258,7 +258,7 @@ static int KnShim_ZIPFileNameIterationCallback(void *context, const char *name) 
 	snprintf(suffix, 128, ".%s.so", gGameName);
 	
 	if (strlen(name) < strlen(suffix) || strcmp(name + strlen(name) - strlen(suffix), suffix)) {
-		LogI("Excluding %s: not named like a module", name);
+		LogI("Excluding possible mod %s: not named like a module (missing '%s')", name, suffix);
 		return 1;
 	}
 	
