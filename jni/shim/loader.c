@@ -201,6 +201,14 @@ const char *KnShim_LoadGame(void) {
 }
 
 /* Modules */
+typedef struct Module {
+	const char *name;
+	const char *description;
+	const char *game;
+	unsigned int *version;
+	void *handle;
+} Module;
+
 const char *KnShim_Init(void);
 const char *KNInitLua(void);
 const char *KNDatabaseInit(void);

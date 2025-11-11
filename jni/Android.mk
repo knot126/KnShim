@@ -10,6 +10,7 @@ LOCAL_SRC_FILES := shim/main.c \
 	shim/knshim.c \
 	shim/loader.c \
 	shim/jnistuff.c \
+	shim/apkiter.c \
 	shim/builtin/antitamper.c \
 	shim/builtin/asset.c \
 	shim/builtin/script.c \
