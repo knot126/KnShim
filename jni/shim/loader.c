@@ -35,7 +35,9 @@
 #undef LEAF_IMPLEMENTATION
 
 #include "util.h"
+#include "knshim.h"
 #include "jnistuff.h"
+#include "apkiter.h"
 #include "loader.h"
 
 /* Shim-wide globals. They are kept here since they are used here most. */
@@ -201,14 +203,10 @@ const char *KnShim_LoadGame(void) {
 }
 
 /* Modules */
-typedef struct Module {
-	const char *name;
-	const char *description;
-	const char *game;
-	unsigned int *version;
-	void *handle;
-} Module;
 
+// Legacy/built-in modules
+// TODO: Make them more like plug-in modules by having the shim itself be a
+// possible module.
 const char *KnShim_Init(void);
 const char *KNInitLua(void);
 const char *KNDatabaseInit(void);
@@ -224,6 +222,81 @@ ModuleInitFunc gModuleInitFuncs[] = {
 	NULL,
 };
 
+void KnShim_LoadBuiltinMods(void) {
+	for (size_t i = 0; gModuleInitFuncs[i] != NULL; i++) {
+		const char *status = (gModuleInitFuncs[i])();
+		
+		if (status) {
+			LogF("KnShim module at index %zu failed to load: %s", i, status);
+			abort();
+		}
+	}
+}
+
+// The new, better, cooler modules
+typedef struct Mod Mod;
+
+typedef struct Mod {
+	const char *name;
+	const char *description;
+	const char *game;
+	unsigned int *version;
+	void *handle;
+	struct Mod *next;
+} Mod;
+
+Mod *gModChain;
+
+static int KnShim_ZIPFileNameIterationCallback(void *context, const char *name) {
+	// Cock if this is module
+	if (strncmp(name, "lib/lib", 7)) {
+		LogI("Excluding %s: not a library file", name);
+		return 1;
+	}
+	
+	char suffix[128];
+	snprintf(suffix, 128, ".%s.so", gGameName);
+	
+	if (strlen(name) < strlen(suffix) || strcmp(name + strlen(name) - strlen(suffix), suffix)) {
+		LogI("Excluding %s: not named like a module", name);
+		return 1;
+	}
+	
+	name += 4;
+	
+	// Allocate module node
+	Mod *mod = malloc(sizeof *mod);
+	
+	if (!mod) {
+		LogE("Failed to allocate memory for module %s", name);
+		return 1;
+	}
+	
+	mod->next = gModChain;
+	
+	// Actually start to load it
+	LogI("Will now load %s as a module", name);
+	
+	mod->handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
+	
+	char *error = dlerror();
+	
+	if (error) {
+		LogE("Failed to load module %s: %s", name, error);
+		free(mod);
+		return 1;
+	}
+	
+	mod->name = dlsym(mod->handle, "ModName");
+	mod->description = dlsym(mod->handle, "ModDescription");
+	mod->game = dlsym(mod->handle, "ModGame");
+	mod->version = dlsym(mod->handle, "ModVersion");
+	
+	gModChain = mod;
+	
+	return 1;
+}
+
 const char *KnShim_LoadMods(void) {
 	gPackageCodePath = KnShim_GetPackageCodePath();
 	
@@ -231,16 +304,16 @@ const char *KnShim_LoadMods(void) {
 		LogI("Found package code path: %s", gPackageCodePath);
 	}
 	else {
-		LogE("Could not get package code path");
+		return "Could not get package code path";
 	}
 	
-	for (size_t i = 0; gModuleInitFuncs[i] != NULL; i++) {
-		const char *status = (gModuleInitFuncs[i])();
-		
-		if (status) {
-			LogE("KnShim module at index %zu failed to load: %s", i, status);
-			abort();
-		}
+	KnShim_LoadBuiltinMods();
+	
+	int error = KnShim_ForEachZIPFileEntry(gPackageCodePath, NULL, KnShim_ZIPFileNameIterationCallback);
+	
+	if (error) {
+		LogE("KnShim_ForEachZIPFileEntry returned %d", error);
+		return "Failed to find modules for loading";
 	}
 	
 	return NULL;

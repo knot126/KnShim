@@ -382,7 +382,7 @@ bool QiFileInputStream_open_hook(QiFileInputStream *this, const char *path) {
 		final_path[strlen(final_path) - 4] = '\0';
 	}
 	
-	LogI("Want to find: %s", final_path);
+	// LogI("Want to find: %s", final_path);
 	
 	if (KNOverlayLoad(this, final_path)) {
 		LogI("Found: %s", final_path);

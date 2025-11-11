@@ -40,6 +40,10 @@ typedef enum KnArch {
 	KN_ARCH_AARCH64 = 8,
 } KnArch;
 
+// Module init and destroy functions
+const char *(KnModuleInitFunction)(void);
+const char *(KnModuleDestroyFunction)(void);
+
 // Scripting extension API
 bool KnRegisterLuaScriptFunction(const char *name, lua_CFunction function);
 bool KnRegisterLuaScriptGlobalInt(const char *name, lua_Integer value);
