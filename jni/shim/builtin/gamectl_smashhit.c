@@ -120,6 +120,7 @@ int knLevelAddScore(lua_State *script) {
 	return 0;
 }
 
+/* Release 16 - this is gone until I can fix the coordinates...
 int knLevelExplosion(lua_State *script) {
 	Level *level = gGame->level;
 	
@@ -136,197 +137,7 @@ int knLevelExplosion(lua_State *script) {
 	
 	return 0;
 }
-
-/**
- * NETWORKING WRAPPERS
- */
-int knDownloadFile(lua_State *script) {
-	/**
-	 * (bool) success = knDownloadFile((string) url, (string) path)
-	 * 
-	 * Download a file over HTTP to the given resource manager path. For
-	 * example:
-	 * 
-	 * if knDownloadFile("http://myserver.com/tomount.zip", "user://tomount.zip") then
-	 *   -- success
-	 * else
-	 *   -- failure
-	 * end
-	 * 
-	 * NOTE: This is a blocking operation, so the game will freeze until it is
-	 * complete. If you want to download a file without blocking, use the HTTP
-	 * module provided by KnShim.
-	 */
-	
-	bool (*downloadFile)(void *_httpThread, QiString *url, QiString *path) = KNGetSymbolAddr("_ZN10HttpThread12downloadFileE8QiStringRKS0_");
-	
-	QiString qUrl = MakeQiString(lua_tostring(script, 1));
-	QiString qPath = MakeQiString(lua_tostring(script, 2));
-	
-	if (!qUrl.data || !qPath.data) {
-		lua_toboolean(script, false);
-		return 1;
-	}
-	
-	// The `this` pointer is never actually used, so it's okay to pass NULL here.
-	bool status = downloadFile(NULL, &qUrl, &qPath);
-	
-	lua_toboolean(script, status);
-	return 1;
-}
-
-int knHttpPost(lua_State *script) {
-	/**
-	 * (bool) success = knHttpPost((string) url, (string) data)
-	 * 
-	 * POST the data to the URL. For example:
-	 * 
-	 * if knHttpPost("http://myserver.com/leaderboard/", "distance=12345") then
-	 *   -- success
-	 * else
-	 *   -- failure
-	 * end
-	 */
-	
-	bool (*httpPost)(ResMan *this, QiString *url, const void *buffer, int size) = KNGetSymbolAddr("_ZN6ResMan8httpPostERK8QiStringPKvi");
-	
-	QiString qUrl = MakeQiString(lua_tostring(script, 1));
-	
-	size_t size;
-	const char *buffer = lua_tolstring(script, 2, &size);
-	
-	// Again, it appears `this` is never used so this is probably fine.
-	bool success = httpPost(NULL, &qUrl, buffer, size);
-	
-	lua_pushboolean(script, success);
-	return 1;
-}
-
-void *DupBuf(const void *buf, size_t size) {
-	void *nbuf = malloc(size);
-	
-	if (!nbuf) return NULL;
-	
-	return memcpy(nbuf, buf, size);
-}
-
-struct HttpPostAsyncInfo {
-	bool (*httpPost)(ResMan *this, QiString *url, const void *buffer, int size);
-	QiString qUrl;
-	char *buffer;
-	int size;
-};
-
-void *knHttpPostAsync_thread(struct HttpPostAsyncInfo *info) {
-	info->httpPost(NULL, &info->qUrl, info->buffer, info->size);
-	free(info->qUrl.data);
-	free(info->buffer);
-	free(info);
-	return NULL;
-}
-
-int knHttpPostAsync(lua_State *script) {
-	/**
-	 * (none) knHttpPostAsync((string) url, (string) data)
-	 * 
-	 * This is similar to knHttpPost, but does it in a new thread discarding the
-	 * return result. This means it might fail without any indication, but will
-	 * not block the main thread.
-	 */
-	
-	struct HttpPostAsyncInfo *info = malloc(sizeof *info);
-	
-	if (!info) {
-		return 0;
-	}
-	
-	const char *lua_url = lua_tostring(script, 1);
-	
-	if (!lua_url) {
-		free(info);
-		return 0;
-	}
-	
-	char *urlbuf = DupBuf(lua_url, strlen(lua_url) + 1);
-	
-	if (!urlbuf) {
-		free(info);
-		return 0;
-	}
-	
-	info->httpPost = KNGetSymbolAddr("_ZN6ResMan8httpPostERK8QiStringPKvi");
-	info->qUrl = MakeQiString(urlbuf);
-	
-	size_t size;
-	const char *buffer = lua_tolstring(script, 2, &size);
-	
-	if (!buffer) {
-		free(urlbuf);
-		free(info);
-		return 0;
-	}
-	
-	info->buffer = DupBuf(buffer, size);
-	
-	if (!info->buffer) {
-		free(urlbuf);
-		free(info);
-		return 0;
-	}
-	
-	info->size = size;
-	
-	KNPreformInBackground((PthreadCallbackFunc) knHttpPostAsync_thread, info);
-	
-	return 0;
-}
-
-/**
- * ASSET SERVER CONTROL
- */
-int knConnectAssetServer(lua_State *script) {
-	/**
-	 * (bool) success = knConnectAssetServer((string) host, (float) timeout)
-	 * 
-	 * Connect to an asset server, waiting up to `timeout` seconds for a
-	 * connection to be formed.
-	 */
-	
-	bool (*connectAssetServer)(QiString *host, float timeout) = KNGetSymbolAddr("_ZN6ResMan18connectAssetServerERK8QiStringf");
-	
-	const char *host_cstr = lua_tostring(script, 1);
-	float timeout = lua_tonumber(script, 2);
-	
-	QiString host_qstr = MakeQiString(host_cstr);
-	
-	lua_pushboolean(script, connectAssetServer(&host_qstr, timeout));
-	
-	return 1;
-}
-
-int knDisconnectAssetServer(lua_State *script) {
-	/**
-	 * knDisconnectAssetServer()
-	 * 
-	 * Disconnect from an asset server, if currently connected.
-	 */
-	
-	void (*disconnectAssetServer)(void) = KNGetSymbolAddr("_ZN6ResMan21disconnectAssetServerEv");
-	disconnectAssetServer();
-	return 0;
-}
-
-int knIsConnectedToAssetServer(lua_State *script) {
-	/**
-	 * (bool) isConnected = knIsConnectedToAssetServer()
-	 * 
-	 * Check if the game is currently connected to an asset server.
-	 */
-	
-	void *sAssetSocket = *(void **)KNGetSymbolAddr("_ZN6ResMan12sAssetSocketE");
-	lua_pushboolean(script, sAssetSocket != NULL);
-	return 1;
-}
+*/
 
 /**
  * MAIN MENU RELOADING
@@ -509,16 +320,6 @@ int knEnableGamectl(lua_State *script) {
 	knRegisterFunc(script, knSetNoclip);
 	knRegisterFunc(script, knGetNoclip);
 	
-	// Wrappers of built-in HTTP functions
-	knRegisterFunc(script, knDownloadFile);
-	knRegisterFunc(script, knHttpPost);
-	knRegisterFunc(script, knHttpPostAsync);
-	
-	// Asset server
-	knRegisterFunc(script, knConnectAssetServer);
-	knRegisterFunc(script, knDisconnectAssetServer);
-	knRegisterFunc(script, knIsConnectedToAssetServer);
-	
 	// Reloading
 	knRegisterFunc(script, knReload);
 	knRegisterFunc(script, knLoadTemplates);
@@ -529,7 +330,7 @@ int knEnableGamectl(lua_State *script) {
 	knRegisterFunc(script, knLevelStreakAbort);
 	knRegisterFunc(script, knLevelStreakInc);
 	knRegisterFunc(script, knLevelAddScore);
-	knRegisterFunc(script, knLevelExplosion);
+	// knRegisterFunc(script, knLevelExplosion);
 	
 	// Refresh rate
 	knRegisterFunc(script, knGetDeviceHz);
