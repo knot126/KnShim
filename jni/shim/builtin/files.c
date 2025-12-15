@@ -311,6 +311,41 @@ int knLoadAsset(lua_State *script) {
 	return 1;
 }
 
+int knListAssetDir(lua_State *script) {
+	/**
+	 * (table) entries = knListAssetDir((string) path)
+	 * 
+	 * List files in a directory from the APK's assets.
+	 */
+	
+	const char *path = lua_tostring(script, 1);
+	
+	if (!path) {
+		return luaL_error(script, "path is null or not a string");
+	}
+	
+	AAssetDir *dir = AAssetManager_openDir(gApp->activity->assetManager, path);
+	
+	if (!dir) {
+		return luaL_error(script, "path is not a valid directory");
+	}
+	
+	lua_createtable(script, 0, 0);
+	
+	size_t i = 1;
+	const char *filename = NULL;
+	
+	while ((filename = AAssetDir_getNextFileName(dir))) {
+		lua_pushinteger(script, i++);
+		lua_pushstring(script, filename);
+		lua_settable(script, -3);
+	}
+	
+	AAssetDir_close(dir);
+	
+	return 1;
+}
+
 int knEnableFile(lua_State *script) {
 	// Files
 	knRegisterFunc(script, knWriteFile);
@@ -326,6 +361,7 @@ int knEnableFile(lua_State *script) {
 	
 	// Assets
 	knRegisterFunc(script, knLoadAsset);
+	knRegisterFunc(script, knListAssetDir);
 	
 	return 0;
 }
