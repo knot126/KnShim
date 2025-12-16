@@ -315,7 +315,8 @@ int knListAssetDir(lua_State *script) {
 	/**
 	 * (table) entries = knListAssetDir((string) path)
 	 * 
-	 * List files in a directory from the APK's assets.
+	 * List files in a directory from the APK's assets. This function is *not*
+	 * aware of overlays and works on the raw asset dir only.
 	 */
 	
 	const char *path = lua_tostring(script, 1);

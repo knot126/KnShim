@@ -2,6 +2,8 @@
 
 # KnShim
 
+> **KnShim has a successor, [YipLoader](https://github.com/knot126/YipLoader), that will be further developed in the future.**
+
 KnShim is a mod loader for Android games. It loads before the game's native library and uses a custom ELF loader and hooking library, Leaf, to provide the needed tools to modify games at runtime on even the newest versions of Android (as of Android 16).
 
 It also provides some "out of the box" goodies for specific games and libraries, like utility functions in Lua scripts.
