@@ -62,6 +62,8 @@ extern void *gLibAndroid;
 extern void *gLibC;
 extern Game **gGamePtr;
 
+extern char *gPackageCodePath;
+
 #define gGame (*gGamePtr)
 
 typedef const char *(*ModuleInitFunc)(void);

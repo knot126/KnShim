@@ -25,6 +25,7 @@ LOCAL_SRC_FILES := shim/main.c \
 	shim/builtin/shaders.c \
 	shim/builtin/input.c \
 	shim/builtin/draw.c \
+	shim/builtin/pack.c \
 	shim/lua/loader.c \
 	shim/extern/miniz.c
 LOCAL_LDLIBS     := -ldl -llog -landroid -lGLESv2
@@ -39,7 +40,7 @@ ifndef DISABLE_TLS
 LOCAL_CFLAGS     += -DHTTP_ENABLE_MBEDTLS
 endif
 
-LOCAL_CFLAGS += -DGRANNY
+# LOCAL_CFLAGS += -DGRANNY
 
 include $(BUILD_SHARED_LIBRARY)
 

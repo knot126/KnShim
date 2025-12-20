@@ -234,68 +234,68 @@ void KnShim_LoadBuiltinMods(void) {
 }
 
 // The new, better, cooler modules
-typedef struct Mod Mod;
+// typedef struct Mod Mod;
+// 
+// typedef struct Mod {
+// 	const char *name;
+// 	const char *description;
+// 	const char *game;
+// 	unsigned int *version;
+// 	void *handle;
+// 	struct Mod *next;
+// } Mod;
 
-typedef struct Mod {
-	const char *name;
-	const char *description;
-	const char *game;
-	unsigned int *version;
-	void *handle;
-	struct Mod *next;
-} Mod;
+// Mod *gModChain;
 
-Mod *gModChain;
-
-static int KnShim_ZIPFileNameIterationCallback(void *context, const char *name) {
-	// Cock if this is module
-	if (strncmp(name, "lib/" KN_ARCH_STRING "/lib", strlen("lib/" KN_ARCH_STRING "/lib"))) {
-		// LogI("Excluding %s: not a library file", name);
-		return 1;
-	}
-	
-	char suffix[128];
-	snprintf(suffix, 128, ".%s.so", gGameName);
-	
-	if (strlen(name) < strlen(suffix) || strcmp(name + strlen(name) - strlen(suffix), suffix)) {
-		LogI("Excluding possible mod %s: not named like a module (missing '%s')", name, suffix);
-		return 1;
-	}
-	
-	name += 4;
-	
-	// Allocate module node
-	Mod *mod = malloc(sizeof *mod);
-	
-	if (!mod) {
-		LogE("Failed to allocate memory for module %s", name);
-		return 1;
-	}
-	
-	mod->next = gModChain;
-	
-	// Actually start to load it
-	LogI("Will now load %s as a module", name);
-	
-	mod->handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
-	
-	char *error = dlerror();
-	
-	if (error) {
-		LogE("Failed to load module %s: %s", name, error);
-		free(mod);
-		return 1;
-	}
-	
-	mod->name = dlsym(mod->handle, "ModName");
-	mod->description = dlsym(mod->handle, "ModDescription");
-	mod->game = dlsym(mod->handle, "ModGame");
-	mod->version = dlsym(mod->handle, "ModVersion");
-	
-	gModChain = mod;
-	
-	return 1;
-}
+// static int KnShim_ZIPFileNameIterationCallback(void *context, const char *name) {
+// 	// Cock if this is module
+// 	if (strncmp(name, "lib/" KN_ARCH_STRING "/lib", strlen("lib/" KN_ARCH_STRING "/lib"))) {
+// 		// LogI("Excluding %s: not a library file", name);
+// 		return 1;
+// 	}
+// 	
+// 	char suffix[128];
+// 	snprintf(suffix, 128, ".%s.so", gGameName);
+// 	
+// 	if (strlen(name) < strlen(suffix) || strcmp(name + strlen(name) - strlen(suffix), suffix)) {
+// 		LogI("Excluding possible mod %s: not named like a module (missing '%s')", name, suffix);
+// 		return 1;
+// 	}
+// 	
+// 	name += 4;
+// 	
+// 	// Allocate module node
+// 	Mod *mod = malloc(sizeof *mod);
+// 	
+// 	if (!mod) {
+// 		LogE("Failed to allocate memory for module %s", name);
+// 		return 1;
+// 	}
+// 	
+// 	mod->next = gModChain;
+// 	
+// 	// Actually start to load it
+// 	LogI("Will now load %s as a module", name);
+// 	
+// 	mod->handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
+// 	
+// 	char *error = dlerror();
+// 	
+// 	if (error) {
+// 		LogE("Failed to load module %s: %s", name, error);
+// 		free(mod);
+// 		return 1;
+// 	}
+// 	
+// 	mod->name = dlsym(mod->handle, "ModName");
+// 	mod->description = dlsym(mod->handle, "ModDescription");
+// 	mod->game = dlsym(mod->handle, "ModGame");
+// 	mod->version = dlsym(mod->handle, "ModVersion");
+// 	
+// 	gModChain = mod;
+// 	
+// 	return 1;
+// }
 
 const char *KnShim_LoadMods(void) {
 	gPackageCodePath = KnShim_GetPackageCodePath();
@@ -309,12 +309,12 @@ const char *KnShim_LoadMods(void) {
 	
 	KnShim_LoadBuiltinMods();
 	
-	int error = KnShim_ForEachZIPFileEntry(gPackageCodePath, NULL, KnShim_ZIPFileNameIterationCallback);
-	
-	if (error) {
-		LogE("KnShim_ForEachZIPFileEntry returned %d", error);
-		return "Failed to find modules for loading";
-	}
+// 	int error = KnShim_ForEachZIPFileEntry(gPackageCodePath, NULL, KnShim_ZIPFileNameIterationCallback);
+// 	
+// 	if (error) {
+// 		LogE("KnShim_ForEachZIPFileEntry returned %d", error);
+// 		return "Failed to find modules for loading";
+// 	}
 	
 	return NULL;
 }
